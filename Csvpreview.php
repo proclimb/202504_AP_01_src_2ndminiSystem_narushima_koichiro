@@ -15,7 +15,7 @@ $csvFile = $csvDir . '/update.csv';  // 例：utf_ken_all.csv を update.csv に
 // 1) ファイル存在チェック
 if (! file_exists($csvFile)) {
     echo "<p style='color:red;'>CSV ファイルが見つかりません: {$csvFile}</p>";
-    echo '<p><a href="index.php">トップに戻る</a></p>';
+    echo '<p><a href="index.php">TOPに戻る</a></p>';
     exit;
 }
 
@@ -23,7 +23,7 @@ if (! file_exists($csvFile)) {
 $rawCsv = file_get_contents($csvFile);
 if ($rawCsv === false) {
     echo "<p style='color:red;'>CSV ファイルを読み込めませんでした。</p>";
-    echo '<p><a href="index.php">トップに戻る</a></p>';
+    echo '<p><a href="index.php">TOPに戻る</a></p>';
     exit;
 }
 
