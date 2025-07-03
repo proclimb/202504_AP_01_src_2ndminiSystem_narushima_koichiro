@@ -100,6 +100,23 @@ class Validator
             $this->error_message['email'] = 'このメールアドレスは既に存在します';
         }
 
+        // 郵便番号・住所の整合性チェック
+        if (!empty($data['postal_code']) && !empty($data['prefecture']) && !empty($data['city_town'])) {
+            $normalized_postal = str_replace('-', '', $data['postal_code']);
+            $address = $this->getAddressByPostalCode($normalized_postal);
+            if ($address) {
+                // 都道府県チェック
+                if ($address['prefecture'] !== $data['prefecture']) {
+                    $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
+                }
+                // 市区町村チェック
+                elseif (strpos($data['city_town'], $address['city']) === false) {
+                    $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
+                }
+            }
+            // 郵便番号がDBに存在しない場合はスルー or 別エラー
+        }
+
         return empty($this->error_message);
     }
 
@@ -123,5 +140,14 @@ class Validator
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':email' => $email]);
         return $stmt->fetchColumn() > 0;
+    }
+
+    // 郵便番号からaddress_masterを検索（引数はハイフンなし）
+    private function getAddressByPostalCode($postal_code)
+    {
+        $sql = "SELECT prefecture, city FROM address_master WHERE postal_code = :postal_code";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':postal_code' => $postal_code]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 }
