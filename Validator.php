@@ -51,8 +51,12 @@ class Validator
         }
 
         // 住所
-        if (empty($data['prefecture']) || empty($data['city_town'])) {
-            $this->error_message['address'] = '住所(都道府県もしくは市区町村・番地)が入力されていません';
+        if (empty($data['prefecture']) && empty($data['city_town'])) {
+            $this->error_message['address'] = '住所が入力されていません';
+        } elseif (empty($data['prefecture'])) {
+            $this->error_message['address'] = '都道府県が入力されていません';
+        } elseif (empty($data['city_town'])) {
+            $this->error_message['address'] = '市区町村・番地以下の住所が入力されていません';
         } elseif (mb_strlen($data['prefecture']) > 10) {
             $this->error_message['address'] = '都道府県は10文字以内で入力してください';
         } elseif (mb_strlen($data['city_town']) > 50 || mb_strlen($data['building']) > 50) {
@@ -61,15 +65,24 @@ class Validator
 
         // 電話番号
         if (empty($data['tel'])) {
+            // 未入力
             $this->error_message['tel'] = '電話番号が入力されていません';
-        } elseif (!str_contains($data['tel'], '-') && preg_match('/^\d{6,}$/', $data['tel'])) {
-            $this->error_message['tel'] = '電話番号はハイフンで区切って入力してください';
+        } elseif (!preg_match('/^[0-9\-]+$/', $data['tel'])) {
+            // 数字とハイフン以外が含まれている
+            $this->error_message['tel'] = '電話番号は半角数字をハイフンで区切って入力してください';
+        } elseif (preg_match('/^\d{6,}$/', $data['tel'])) {
+            // 完全に数字だけで6桁以上（ハイフンなし）
+            $this->error_message['tel'] = '電話番号は半角数字をハイフンで区切って入力してください';
+        } elseif (preg_match('/\-{2,}/', $data['tel'])) {
+            // ハイフンが連続している
+            $this->error_message['tel'] = '電話番号は12~13桁で正しく入力してください（例: 090-1234-5678）';
         } elseif (
-            !preg_match('/^0\d{1,4}-\d{1,4}-\d{3,4}$/', $data['tel'] ?? '') ||
+            !preg_match('/^0\d{1,4}-\d{1,4}-\d{3,4}$/', $data['tel']) ||
             mb_strlen($data['tel']) < 12 ||
             mb_strlen($data['tel']) > 13
         ) {
-            $this->error_message['tel'] = '電話番号は12~13桁で正しく入力してください';
+            // 形式違いや文字数の不一致
+            $this->error_message['tel'] = '電話番号は12~13桁で正しく入力してください（例: 090-1234-5678）';
         }
 
         // メールアドレス
