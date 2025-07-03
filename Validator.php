@@ -12,6 +12,8 @@ class Validator
         // 名前
         if (empty($data['name'])) {
             $this->error_message['name'] = '名前が入力されていません';
+        } elseif (!preg_match('/^[\p{Han}ぁ-んァ-ンー\x20　]+$/u', $data['name'])) {
+            $this->error_message['name'] = '入力できるのは漢字・ひらがな・カタカナのみです';
         } elseif (mb_strlen($data['name']) > 20) {
             $this->error_message['name'] = '名前は20文字以内で入力してください';
         }
@@ -20,6 +22,7 @@ class Validator
         if (empty($data['kana'])) {
             $this->error_message['kana'] = 'ふりがなが入力されていません';
         } elseif (preg_match('/[^ぁ-んー]/u', $data['kana'])) {
+        } elseif (preg_match('/[^ぁ-んー\x20　]/u', $data['kana'])) {
             $this->error_message['kana'] = 'ひらがなで入力してください';
         } elseif (mb_strlen($data['kana']) > 20) {
             $this->error_message['kana'] = 'ふりがなは20文字以内で入力してください';
