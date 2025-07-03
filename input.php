@@ -256,6 +256,21 @@ session_destroy();
             </a>
         </form>
     </div>
+
+    <!-- フォーム入力の前後から空白を取り除く -->
+    <script>
+        document.forms['form'].addEventListener('submit', function() {
+            const fieldsToTrim = ['name', 'kana', 'prefecture', 'city_town', 'building', 'tel', 'email'];
+            fieldsToTrim.forEach(function(fieldName) {
+                const input = document.querySelector(`[name="${fieldName}"]`);
+                if (input && typeof input.value === 'string') {
+                    // 半角スペース (\s) と 全角スペース (\u3000) を前後から除去
+                    input.value = input.value.replace(/^[\s\u3000]+|[\s\u3000]+$/g, '');
+                }
+            });
+        });
+    </script>
+
 </body>
 
 </html>
