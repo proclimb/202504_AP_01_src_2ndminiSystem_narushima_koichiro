@@ -34,6 +34,13 @@ class Validator
             $this->error_message['birth_date'] = '生年月日が入力されていません';
         } elseif (!$this->isValidDate($data['birth_year'] ?? '', $data['birth_month'] ?? '', $data['birth_day'] ?? '')) {
             $this->error_message['birth_date'] = '生年月日が正しくありません';
+        } else {
+            $inputDate = DateTime::createFromFormat('Y-m-d', sprintf('%04d-%02d-%02d', $data['birth_year'], $data['birth_month'], $data['birth_day']));
+            $today = new DateTime('today');
+
+            if ($inputDate > $today) {
+                $this->error_message['birth_date'] = '生年月日が正しくありません';
+            }
         }
 
         // 郵便番号
