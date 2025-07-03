@@ -92,6 +92,14 @@ class User
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function emailExists($email)
+    {
+        $sql = "SELECT COUNT(*) FROM user_base WHERE email = :email";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':email' => $email]);
+        return $stmt->fetchColumn() > 0;
+    }
+
 
     // ユーザ削除
     public function delete($id)
