@@ -62,6 +62,8 @@ class Validator
         // 電話番号
         if (empty($data['tel'])) {
             $this->error_message['tel'] = '電話番号が入力されていません';
+        } elseif (!str_contains($data['tel'], '-') && preg_match('/^\d{6,}$/', $data['tel'])) {
+            $this->error_message['tel'] = '電話番号はハイフンで区切って入力してください';
         } elseif (
             !preg_match('/^0\d{1,4}-\d{1,4}-\d{3,4}$/', $data['tel'] ?? '') ||
             mb_strlen($data['tel']) < 12 ||
