@@ -3,6 +3,12 @@
 class Validator
 {
     private $error_message = [];
+    private $pdo; // 追加
+
+    public function __construct($pdo) // 追加
+    {
+        $this->pdo = $pdo;
+    }
 
     // 呼び出し元で使う
     public function validate($data)
@@ -90,6 +96,8 @@ class Validator
             $this->error_message['email'] = 'メールアドレスが入力されていません';
         } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $this->error_message['email'] = '有効なメールアドレスを入力してください';
+        } elseif ($this->emailExists($data['email'])) { // 追加
+            $this->error_message['email'] = 'このメールアドレスは既に存在します';
         }
 
         return empty($this->error_message);
@@ -106,5 +114,14 @@ class Validator
     private function isValidDate($year, $month, $day)
     {
         return checkdate((int)$month, (int)$day, (int)$year);
+    }
+
+    // メールアドレス重複チェック
+    private function emailExists($email)
+    {
+        $sql = "SELECT COUNT(*) FROM user_base WHERE email = :email";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':email' => $email]);
+        return $stmt->fetchColumn() > 0;
     }
 }
