@@ -11,9 +11,21 @@ class Validator
     }
 
     // 呼び出し元で使う
-    public function validate($data)
+
+
+    public function validate(&$data) // ← 引用渡しに変更
     {
         $this->error_message = [];
+
+        // 入力値の前後スペース除去（全角・半角）
+        $fieldsToTrim = ['name', 'kana', 'prefecture', 'city_town', 'building', 'tel', 'email'];
+        foreach ($fieldsToTrim as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                // 半角スペース(\s)・全角スペース(\u3000)を前後から除去
+                $data[$field] = preg_replace('/^[\s\x{3000}]+|[\s\x{3000}]+$/u', '', $data[$field]);
+            }
+        }
+        $id = $data['id'] ?? null;
 
         // 名前
         if (empty($data['name'])) {
@@ -43,9 +55,15 @@ class Validator
         } else {
             $inputDate = DateTime::createFromFormat('Y-m-d', sprintf('%04d-%02d-%02d', $data['birth_year'], $data['birth_month'], $data['birth_day']));
             $today = new DateTime('today');
-
-            if ($inputDate > $today) {
+            if ($inputDate === false) {
                 $this->error_message['birth_date'] = '生年月日が正しくありません';
+            } else {
+                $inputDate->setTime(0, 0, 0);
+                $today->setTime(0, 0, 0);
+                if ($inputDate > $today) {
+                    $this->error_message['birth_date'] = '生年月日が正しくありません';
+                }
+                // $inputDate == $today はOK
             }
         }
 
@@ -96,7 +114,7 @@ class Validator
             $this->error_message['email'] = 'メールアドレスが入力されていません';
         } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $this->error_message['email'] = '有効なメールアドレスを入力してください';
-        } elseif ($this->emailExists($data['email'])) { // 追加
+        } elseif ($this->emailExists($data['email'], $id)) { // ←idを渡す
             $this->error_message['email'] = 'このメールアドレスは既に存在します';
         }
 
@@ -134,11 +152,16 @@ class Validator
     }
 
     // メールアドレス重複チェック
-    private function emailExists($email)
+    private function emailExists($email, $id = null)
     {
         $sql = "SELECT COUNT(*) FROM user_base WHERE email = :email";
+        $params = [':email' => $email];
+        if ($id !== null) {
+            $sql .= " AND id != :id";
+            $params[':id'] = $id;
+        }
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':email' => $email]);
+        $stmt->execute($params);
         return $stmt->fetchColumn() > 0;
     }
 
