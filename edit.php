@@ -2,38 +2,125 @@
 
 /**
  * 更新・削除画面
- *
- * ** 更新・削除画面は、ダッシュボード、更新・削除確認の2画面から遷移してきます
- * * **
- * ** 【説明】
- * **   更新・削除では、入力チェックと画面遷移をjavascriptで行います
- * **   そのため、登録の時とは違い、セッションを使用しないパターンのプログラムになります
- * **
- * ** 各画面毎の処理は以下です
- * ** 1.DB接続情報、クラス定義をそれぞれのファイルから読み込む
- * ** 2.DBからユーザ情報を取得する為、$_GETからID情報を取得する
- * ** 3.ユーザ情報を取得する
- * **   1.Userクラスをインスタスタンス化する
- * **     ＊User(設計図)に$user(実体)を付ける
- * **   2.メソッドを実行じユーザー情報を取得する
- * ** 4.html を描画
+ * update.phpで行っていたDBへの書き込み処理をedit.phpに統合した
  */
 
-//  1.DB接続情報、クラス定義の読み込み
+// =============================
+// 必要なクラスの読み込み
+// =============================
 require_once 'Db.php';
 require_once 'User.php';
+require_once 'Validator.php';
+require_once 'Address.php';
+require_once 'FileBlobHelper.php';
 
-// 2.ダッシュボードから送信した変数を設定
-$id = $_GET['id'];
+// =============================
+// 変数の初期化
+// =============================
+$error_message = [];
+$old = [];
 
-// 3-1.Userクラスをインスタンス化
-$user = new User($pdo);
+// =============================
+// POSTリクエスト時の処理（更新処理）
+// =============================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $validator = new Validator($pdo);
+    $postData = $_POST;
 
-// 3-2.UserクラスのfindById()メソッドで1件検索
-$_POST = $user->findById($id);
+    // 生年月日を分解してValidator用にセット
+    if (!empty($postData['birth_date'])) {
+        $dateParts = explode('-', $postData['birth_date']);
+        if (count($dateParts) === 3) {
+            $postData['birth_year'] = $dateParts[0];
+            $postData['birth_month'] = $dateParts[1];
+            $postData['birth_day'] = $dateParts[2];
+        }
+    }
 
-// 4.html の描画
+    // 性別情報のセット
+    if (isset($postData['gender_flag'])) {
+        $postData['gender'] = $postData['gender_flag'];
+    }
+
+    // バリデーションチェック
+    if ($validator->validate($postData)) {
+        try {
+            $pdo->beginTransaction();
+
+            $id = $postData['id'];
+
+            // ユーザー情報の配列作成
+            $userData = [
+                'name'         => $postData['name'],
+                'kana'         => $postData['kana'],
+                'gender_flag'  => $postData['gender_flag'],
+                'tel'          => $postData['tel'],
+                'email'        => $postData['email'],
+            ];
+
+            // 住所情報の配列作成
+            $addressData = [
+                'user_id'      => $id,
+                'postal_code'  => $postData['postal_code'],
+                'prefecture'   => $postData['prefecture'],
+                'city_town'    => $postData['city_town'],
+                'building'     => $postData['building'],
+            ];
+
+            // ユーザー情報の更新
+            $user = new User($pdo);
+            $user->update($id, $userData);
+
+            // 住所情報の更新
+            $address = new UserAddress($pdo);
+            $address->updateByUserId($addressData);
+
+            // 本人確認書類（ファイル）のアップロード処理
+            $blobs = FileBlobHelper::getMultipleBlobs(
+                $_FILES['document1'] ?? null,
+                $_FILES['document2'] ?? null
+            );
+
+            if ($blobs !== null) {
+                $expiresAt = null;
+                $user->saveDocument(
+                    $id,
+                    $blobs['front'],
+                    $blobs['back'],
+                    $expiresAt
+                );
+            }
+
+            // コミット・リダイレクト
+            $pdo->commit();
+            header('Location: update.php');
+            exit();
+        } catch (Exception $e) {
+            // エラー時のロールバック・エラーメッセージ格納
+            $pdo->rollBack();
+            $error_message[] = '更新に失敗しました: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES);
+            $old = $postData;
+        }
+    } else {
+        // バリデーションエラー時の処理
+        $error_message = $validator->getErrors();
+        $old = $postData;
+    }
+} else {
+    // =============================
+    // GETリクエスト時の処理（初期表示）
+    // =============================
+    $id = $_GET['id'];
+    $user = new User($pdo);
+    $old = $user->findById($id);
+
+    // 初期表示時にもバリデーション（エラー表示用）
+    $validator = new Validator($pdo);
+    $validator->validate($old);
+    $error_message = $validator->getErrors();
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -42,7 +129,6 @@ $_POST = $user->findById($id);
     <title>mini System</title>
     <link rel="stylesheet" href="style_new.css">
     <script src="postalcodesearch.js"></script>
-    <script src="contact.js"></script>
 </head>
 
 <body>
@@ -53,8 +139,8 @@ $_POST = $user->findById($id);
         <h2>更新・削除画面</h2>
     </div>
     <div>
-        <form action="update.php" method="post" name="edit" enctype="multipart/form-data">
-            <input type="hidden" name="id" value="<?php echo $_POST['id'] ?>">
+        <form method="post" name="edit" enctype="multipart/form-data">
+            <input type="hidden" name="id" value="<?= htmlspecialchars($old['id'] ?? '') ?>">
             <h1 class="contact-title">更新内容入力</h1>
             <p>更新内容をご入力の上、「更新」ボタンをクリックしてください。</p>
             <p>削除する場合は「削除」ボタンをクリックしてください。</p>
@@ -65,7 +151,10 @@ $_POST = $user->findById($id);
                         type="text"
                         name="name"
                         placeholder="例）山田太郎"
-                        value="<?= htmlspecialchars($_POST['name']) ?>">
+                        value="<?= htmlspecialchars($old['name'] ?? '') ?>">
+                    <?php if (isset($error_message['name'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($error_message['name']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>ふりがな<span>必須</span></label>
@@ -73,39 +162,39 @@ $_POST = $user->findById($id);
                         type="text"
                         name="kana"
                         placeholder="例）やまだたろう"
-                        value="<?= htmlspecialchars($_POST['kana']) ?>">
+                        value="<?= htmlspecialchars($old['kana'] ?? '') ?>">
+                    <?php if (isset($error_message['kana'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($error_message['kana']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>性別<span>必須</span></label>
-                    <?php $_POST['gender_flag'] ?? '1'; ?>
+                    <?php $gender = $old['gender_flag'] ?? '1'; ?>
                     <label class="gender">
                         <input
                             type="radio"
                             name="gender_flag"
                             value='1'
-                            <?= ($_POST['gender_flag'] ?? '1') == '1'
-                                ? 'checked' : '' ?>>男性</label>
+                            <?= $gender == '1' ? 'checked' : '' ?>>男性</label>
                     <label class="gender">
                         <input
                             type="radio"
                             name="gender_flag"
                             value='2'
-                            <?= ($_POST['gender_flag'] ?? '') == '2'
-                                ? 'checked' : '' ?>>女性</label>
+                            <?= $gender == '2' ? 'checked' : '' ?>>女性</label>
                     <label class="gender">
                         <input
                             type="radio"
                             name="gender_flag"
                             value='3'
-                            <?= ($_POST['gender_flag'] ?? '') == '3'
-                                ? 'checked' : '' ?>>その他</label>
+                            <?= $gender == '3' ? 'checked' : '' ?>>その他</label>
                 </div>
                 <div>
                     <label>生年月日<span>必須</span></label>
                     <input
                         type="text"
                         name="birth_date"
-                        value="<?php echo $_POST['birth_date'] ?>"
+                        value="<?= htmlspecialchars($old['birth_date'] ?? '') ?>"
                         readonly
                         class="readonly-field">
                 </div>
@@ -118,11 +207,14 @@ $_POST = $user->findById($id);
                             name="postal_code"
                             id="postal_code"
                             placeholder="例）100-0001"
-                            value="<?= htmlspecialchars($_POST['postal_code'] ?? '') ?>">
+                            value="<?= htmlspecialchars($old['postal_code'] ?? '') ?>">
                         <button type="button"
                             class="postal-code-search"
                             id="searchAddressBtn">住所検索</button>
                     </div>
+                    <?php if (isset($error_message['postal_code'])) : ?>
+                        <div class="error-msg2"><?= htmlspecialchars($error_message['postal_code']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>住所<span>必須</span></label>
@@ -131,18 +223,21 @@ $_POST = $user->findById($id);
                         name="prefecture"
                         id="prefecture"
                         placeholder="都道府県"
-                        value="<?= htmlspecialchars($_POST['prefecture'] ?? '') ?>">
+                        value="<?= htmlspecialchars($old['prefecture'] ?? '') ?>">
                     <input
                         type="text"
                         name="city_town"
                         id="city_town"
                         placeholder="市区町村・番地"
-                        value="<?= htmlspecialchars($_POST['city_town'] ?? '') ?>">
+                        value="<?= htmlspecialchars($old['city_town'] ?? '') ?>">
                     <input
                         type="text"
                         name="building"
                         placeholder="建物名・部屋番号  **省略可**"
-                        value="<?= htmlspecialchars($_POST['building'] ?? '') ?>">
+                        value="<?= htmlspecialchars($old['building'] ?? '') ?>">
+                    <?php if (isset($error_message['address'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($error_message['address']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>電話番号<span>必須</span></label>
@@ -150,7 +245,10 @@ $_POST = $user->findById($id);
                         type="text"
                         name="tel"
                         placeholder="例）000-000-0000"
-                        value="<?= htmlspecialchars($_POST['tel']) ?>">
+                        value="<?= htmlspecialchars($old['tel'] ?? '') ?>">
+                    <?php if (isset($error_message['tel'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($error_message['tel']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>メールアドレス<span>必須</span></label>
@@ -158,7 +256,10 @@ $_POST = $user->findById($id);
                         type="text"
                         name="email"
                         placeholder="例）guest@example.com"
-                        value="<?= htmlspecialchars($_POST['email']) ?>">
+                        value="<?= htmlspecialchars($old['email'] ?? '') ?>">
+                    <?php if (isset($error_message['email'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($error_message['email']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label>本人確認書類（表）</label>
@@ -170,6 +271,11 @@ $_POST = $user->findById($id);
                     <span id="filename1" class="filename-display"></span>
                     <div class="preview-container">
                         <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
+                        <?php
+                        //書類アップロード時のエラーメッセージ表示
+                        if (isset($error_message['document1'])) : ?>
+                            <div class="error-msg"><?= htmlspecialchars($error_message['document1']) ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -183,16 +289,22 @@ $_POST = $user->findById($id);
                     <span id="filename2" class="filename-display"></span>
                     <div class="preview-container">
                         <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
+                        <?php
+                        //書類アップロード時のエラーメッセージ表示
+                        if (isset($error_message['document2'])) : ?>
+                            <div class="error-msg"><?= htmlspecialchars($error_message['document2']) ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
-            <button type="button" onclick="validate()">更新</button>
-            <input type="button" value="ダッシュボードに戻る" onclick="history.back(-1)">
-        </form>
-        <form action="delete.php" method="post" name="delete">
-            <input type="hidden" name="id" value="<?php echo $_POST['id'] ?>">
-            <button type="submit">削除</button>
-        </form>
+    </div>
+    <button type="submit">更新</button>
+    <a href="dashboard.php"><button type="button">ダッシュボードに戻る</button></a>
+    </form>
+    <form action="delete.php" method="post" name="delete">
+        <input type="hidden" name="id" value="<?= htmlspecialchars($old['id'] ?? '') ?>">
+        <button type="submit">削除</button>
+    </form>
     </div>
 </body>
 
