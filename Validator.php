@@ -39,7 +39,6 @@ class Validator
         // ふりがな
         if (empty($data['kana'])) {
             $this->error_message['kana'] = 'ふりがなが入力されていません';
-        } elseif (preg_match('/[^ぁ-んー]/u', $data['kana'])) {
         } elseif (preg_match('/[^ぁ-んー\x20　]/u', $data['kana'])) {
             $this->error_message['kana'] = 'ひらがなで入力してください';
         } elseif (mb_strlen($data['kana']) > 20) {
@@ -133,6 +132,40 @@ class Validator
                 }
             }
             // 郵便番号がDBに存在しない場合はスルー or 別エラー
+        }
+
+        // 本人確認書類（表）
+        if (isset($_FILES['document1']) && $_FILES['document1']['error'] === UPLOAD_ERR_OK) {
+            // ファイルが選択されている場合のみバリデーション（拡張子・サイズ等）
+            $fileType1 = mime_content_type($_FILES['document1']['tmp_name']);
+            $allowedTypes = ['image/png', 'image/jpeg'];
+            $maxSizeMB = 2;
+
+            if (!in_array($fileType1, $allowedTypes)) {
+                $this->error_message['document1'] = 'データの形式が正しくありません（PNG / JPEG）';
+            } elseif ($_FILES['document1']['size'] > $maxSizeMB * 1024 * 1024) {
+                $this->error_message['document1'] = 'ファイルサイズが大きすぎます（最大2MB）';
+            }
+        } else {
+            // 編集時は未選択でもエラーにしない（新規登録時のみ必須にしたい場合は条件分岐）
+            // $this->error_message['document1'] = '本人確認書類（表）を選択してください'; // ←常に必須にしない
+        }
+
+        // 本人確認書類（裏）
+        if (isset($_FILES['document2']) && $_FILES['document2']['error'] === UPLOAD_ERR_OK) {
+            // ファイルが選択されている場合のみバリデーション（拡張子・サイズ等）
+            $fileType2 = mime_content_type($_FILES['document2']['tmp_name']);
+            $allowedTypes = ['image/png', 'image/jpeg'];
+            $maxSizeMB = 2;
+
+            if (!in_array($fileType2, $allowedTypes)) {
+                $this->error_message['document2'] = 'データの形式が正しくありません（PNG / JPEG）';
+            } elseif ($_FILES['document2']['size'] > $maxSizeMB * 1024 * 1024) {
+                $this->error_message['document2'] = 'ファイルサイズが大きすぎます（最大2MB）';
+            }
+        } else {
+            // 編集時は未選択でもエラーにしない（新規登録時のみ必須にしたい場合は条件分岐）
+            // $this->error_message['document2'] = '本人確認書類（裏）を選択してください'; // ←常に必須にしない
         }
 
         return empty($this->error_message);
