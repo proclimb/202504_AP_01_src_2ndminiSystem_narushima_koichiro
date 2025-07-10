@@ -1,3 +1,10 @@
+<!--
+ * 更新・削除画面
+ * update.phpで行っていたDBへの書き込み処理をedit.phpに統合した。
+ * そのためupdate.phpはHTMLのみになる
+-->
+
+
 <!DOCTYPE html>
 <html lang="ja">
 
