@@ -135,38 +135,9 @@ class Validator
         }
 
         // 本人確認書類（表）
-        if (isset($_FILES['document1']) && $_FILES['document1']['error'] === UPLOAD_ERR_OK) {
-            // ファイルが選択されている場合のみバリデーション（拡張子・サイズ等）
-            $fileType1 = mime_content_type($_FILES['document1']['tmp_name']);
-            $allowedTypes = ['image/png', 'image/jpeg'];
-            $maxSizeMB = 2;
-
-            if (!in_array($fileType1, $allowedTypes)) {
-                $this->error_message['document1'] = 'データの形式が正しくありません（PNG / JPEG）';
-            } elseif ($_FILES['document1']['size'] > $maxSizeMB * 1024 * 1024) {
-                $this->error_message['document1'] = 'ファイルサイズが大きすぎます（最大2MB）';
-            }
-        } else {
-            // 編集時は未選択でもエラーにしない（新規登録時のみ必須にしたい場合は条件分岐）
-            // $this->error_message['document1'] = '本人確認書類（表）を選択してください'; // ←常に必須にしない
-        }
-
+        $this->validateDocument('document1', '本人確認書類（表）');
         // 本人確認書類（裏）
-        if (isset($_FILES['document2']) && $_FILES['document2']['error'] === UPLOAD_ERR_OK) {
-            // ファイルが選択されている場合のみバリデーション（拡張子・サイズ等）
-            $fileType2 = mime_content_type($_FILES['document2']['tmp_name']);
-            $allowedTypes = ['image/png', 'image/jpeg'];
-            $maxSizeMB = 2;
-
-            if (!in_array($fileType2, $allowedTypes)) {
-                $this->error_message['document2'] = 'データの形式が正しくありません（PNG / JPEG）';
-            } elseif ($_FILES['document2']['size'] > $maxSizeMB * 1024 * 1024) {
-                $this->error_message['document2'] = 'ファイルサイズが大きすぎます（最大2MB）';
-            }
-        } else {
-            // 編集時は未選択でもエラーにしない（新規登録時のみ必須にしたい場合は条件分岐）
-            // $this->error_message['document2'] = '本人確認書類（裏）を選択してください'; // ←常に必須にしない
-        }
+        $this->validateDocument('document2', '本人確認書類（裏）');
 
         return empty($this->error_message);
     }
@@ -205,5 +176,25 @@ class Validator
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':postal_code' => $postal_code]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    // 本人確認書類バリデーション
+    private function validateDocument($fileKey, $label)
+    {
+        $allowedTypes = ['image/png', 'image/jpeg'];
+        $maxSizeMB = 5; // 最大ファイルサイズ 5MB
+        if (isset($_FILES[$fileKey]) && $_FILES[$fileKey]['error'] === UPLOAD_ERR_OK) {
+            $fileType = mime_content_type($_FILES[$fileKey]['tmp_name']);
+            $fileSize = $_FILES[$fileKey]['size'];
+
+            if (!in_array($fileType, $allowedTypes)) {
+                $this->error_message[$fileKey] = "{$label}の形式が正しくありません（PNG / JPEG）";
+            } elseif ($fileSize > $maxSizeMB * 1024 * 1024) {
+                $this->error_message[$fileKey] = "{$label}のファイルサイズが大きすぎます（最大{$maxSizeMB}MB）";
+            }
+        } else {
+            // 必須にしたい場合はここでエラーを追加
+            // $this->error_message[$fileKey] = "{$label}を選択してください";
+        }
     }
 }
