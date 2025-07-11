@@ -191,12 +191,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div>
                     <label>生年月日<span>必須</span></label>
+                    <?php
+                    $formatted_date = '';
+                    if (!empty($old['birth_date'])) {
+                        $date = DateTime::createFromFormat('Y-m-d', $old['birth_date']);
+                        if ($date) {
+                            $formatted_date = $date->format('Y年n月j日');
+                        }
+                    }
+                    ?>
+                    <!-- 表示専用フィールド（readonly） -->
                     <input
                         type="text"
-                        name="birth_date"
-                        value="<?= htmlspecialchars($old['birth_date'] ?? '') ?>"
+                        value="<?= htmlspecialchars($formatted_date) ?>"
                         readonly
                         class="readonly-field">
+                    <!-- 実際に送信されるデータ用のhiddenフィールド -->
+                    <input
+                        type="hidden"
+                        name="birth_date"
+                        value="<?= htmlspecialchars($old['birth_date'] ?? '') ?>">
                 </div>
                 <div>
                     <label>郵便番号<span>必須</span></label>
@@ -278,7 +292,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endif; ?>
                     </div>
                 </div>
-
                 <div>
                     <label>本人確認書類（裏）</label>
                     <input
