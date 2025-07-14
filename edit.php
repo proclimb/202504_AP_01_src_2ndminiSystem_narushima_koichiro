@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h2>更新・削除画面</h2>
     </div>
     <div>
-        <form method="post" name="edit" enctype="multipart/form-data">
+        <form method="post" name="edit" enctype="multipart/form-data" onsubmit="return validate();">
             <input type="hidden" name="id" value="<?= htmlspecialchars($old['id'] ?? '') ?>">
             <h1 class="contact-title">更新内容入力</h1>
             <p>更新内容をご入力の上、「更新」ボタンをクリックしてください。</p>
