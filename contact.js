@@ -235,14 +235,23 @@ function validateTelField() {
     }
 }
 
-// メールアドレス：必須＋形式チェック
+// メールアドレス：必須＋形式チェック（重複チェックはJSではできない）
 function validateEmailField() {
     removeFieldError(document.edit.email);
-    const val = document.edit.email.value;
-    if (val.trim() === "") {
-        errorElement(document.edit.email, "メールアドレスを入力してください。");
-    } else if (!validateMail(val)) {
-        errorElement(document.edit.email, "メールアドレスの形式が不正です。");
+    const field = document.edit.email;
+    const val = field.value.trim();
+
+    // 1. 未入力チェック
+    if (val === "") {
+        errorElement(field, "メールアドレスが入力されていません");
+        return;
+    }
+
+    // 2. 標準的なメールアドレス形式チェック（RFC準拠に近づける）
+    const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailPattern.test(val)) {
+        errorElement(field, "有効なメールアドレスを入力してください");
+        return;
     }
 }
 
