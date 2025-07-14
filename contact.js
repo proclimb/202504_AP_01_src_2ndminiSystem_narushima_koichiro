@@ -1,102 +1,23 @@
 /**
- * 入力項目のバリデーションを行います。
+ * 入力項目のバリデーションを行います（送信時）。
  */
 function validate() {
-
-    // エラーフラグの初期化（true: エラーなし、false: エラーあり）
     var flag = true;
 
-    // 既存のエラーメッセージとスタイルをリセット
     removeElementsByClass("error");
     removeClass("error-form");
 
-    // お名前：必須
-    if (document.edit.name.value == "") {
-        errorElement(document.edit.name, "名前を入力してください。");
-        flag = false;
-    }
+    // 全項目をチェック（送信時）
+    validateName(); if (hasError(document.edit.name)) flag = false;
+    validateKana(); if (hasError(document.edit.kana)) flag = false;
+    validatePostalCode(); if (hasError(document.edit.postal_code)) flag = false;
+    validatePrefecture(); if (hasError(document.edit.prefecture)) flag = false;
+    validateCityTown(); if (hasError(document.edit.city_town)) flag = false;
+    validateTelField(); if (hasError(document.edit.tel)) flag = false;
+    validateEmailField(); if (hasError(document.edit.email)) flag = false;
+    validateDocument1(); if (hasError(document.edit.document1)) flag = false;
+    validateDocument2(); if (hasError(document.edit.document2)) flag = false;
 
-    // ふりがな：必須＋ひらがなチェック
-    if (document.edit.kana.value == "") {
-        errorElement(document.edit.kana, "ふりがなを入力してください。");
-        flag = false;
-    } else {
-        if (!validateKana(document.edit.kana.value)) {
-            errorElement(document.edit.kana, "ふりがなはひらがなで入力してください。");
-            flag = false;
-        }
-    }
-
-    // 郵便番号：必須＋形式チェック
-    if (document.edit.postal_code.value === "") {
-        errorElement(document.edit.postal_code, "郵便番号を入力してください。");
-        flag = false;
-    } else if (!/^\d{3}-\d{4}$/.test(document.edit.postal_code.value)) {
-        errorElement(document.edit.postal_code, "郵便番号の形式が不正です（例: 123-4567）");
-        flag = false;
-    }
-
-    // 住所：都道府県・市区町村
-    if (document.edit.prefecture.value === "") {
-        errorElement(document.edit.prefecture, "都道府県を選択してください。");
-        flag = false;
-    }
-    if (document.edit.city_town.value === "") {
-        errorElement(document.edit.city_town, "市区町村を入力してください。");
-        flag = false;
-    }
-
-    // TODO: 建物名（building）の入力チェック（任意）
-
-    // 電話番号：必須＋形式チェック
-    if (document.edit.tel.value == "") {
-        errorElement(document.edit.tel, "電話番号を入力してください。");
-        flag = false;
-    } else {
-        if (!validateTel(document.edit.tel.value)) {
-            errorElement(document.edit.tel, "電話番号の形式が不正です（例: 090-1234-5678）");
-            flag = false;
-        }
-    }
-
-    // メールアドレス：必須＋形式チェック
-    if (document.edit.email.value == "") {
-        errorElement(document.edit.email, "メールアドレスを入力してください。");
-        flag = false;
-    } else {
-        if (!validateMail(document.edit.email.value)) {
-            errorElement(document.edit.email, "メールアドレスの形式が不正です。");
-            flag = false;
-        }
-    }
-
-    // 本人確認書類（表）：形式チェック
-    var fileInput1 = document.edit.document1;
-    if (fileInput1 && fileInput1.files.length > 0) {
-        var file1 = fileInput1.files[0];
-        var type1 = file1.type;
-        if (type1 !== "image/png" && type1 !== "image/jpeg") {
-            errorElement(fileInput1, "PNGまたはJPEG形式の画像をアップロードしてください。");
-            flag = false;
-        }
-        // TODO: ファイルサイズのチェック（最大5MBなど）
-    }
-
-    // 本人確認書類（裏）：形式チェック
-    var fileInput2 = document.edit.document2;
-    if (fileInput2 && fileInput2.files.length > 0) {
-        var file2 = fileInput2.files[0];
-        var type2 = file2.type;
-        if (type2 !== "image/png" && type2 !== "image/jpeg") {
-            errorElement(fileInput2, "PNGまたはJPEG形式の画像をアップロードしてください。");
-            flag = false;
-        }
-        // TODO: ファイルサイズのチェック（最大5MBなど）
-    }
-
-    // TODO: 生年月日の入力チェックを追加する（format: YYYY-MM-DD）
-
-    // エラーがなければ送信
     if (flag) {
         document.edit.submit();
     }
@@ -105,16 +26,128 @@ function validate() {
 }
 
 /**
+ * 入力時に各項目をリアルタイムでチェック
+ */
+window.addEventListener("DOMContentLoaded", function () {
+    const form = document.edit;
+
+    form.name.addEventListener("input", validateName);
+    form.kana.addEventListener("input", validateKana);
+    form.postal_code.addEventListener("input", validatePostalCode);
+    form.prefecture.addEventListener("change", validatePrefecture);
+    form.city_town.addEventListener("input", validateCityTown);
+    form.tel.addEventListener("input", validateTelField);
+    form.email.addEventListener("input", validateEmailField);
+    form.document1.addEventListener("change", validateDocument1);
+    form.document2.addEventListener("change", validateDocument2);
+});
+
+// ==========================
+// 各項目のバリデーション関数
+// ==========================
+
+// お名前：必須
+function validateName() {
+    removeFieldError(document.edit.name);
+    if (document.edit.name.value.trim() === "") {
+        errorElement(document.edit.name, "名前を入力してください。");
+    }
+}
+
+// ふりがな：必須＋ひらがなチェック
+function validateKana() {
+    removeFieldError(document.edit.kana);
+    const val = document.edit.kana.value;
+    if (val.trim() === "") {
+        errorElement(document.edit.kana, "ふりがなを入力してください。");
+    } else if (!validateKanaFormat(val)) {
+        errorElement(document.edit.kana, "ふりがなはひらがなで入力してください。");
+    }
+}
+
+// 郵便番号：必須＋形式チェック
+function validatePostalCode() {
+    removeFieldError(document.edit.postal_code);
+    const val = document.edit.postal_code.value;
+    if (val.trim() === "") {
+        errorElement(document.edit.postal_code, "郵便番号を入力してください。");
+    } else if (!/^\d{3}-\d{4}$/.test(val)) {
+        errorElement(document.edit.postal_code, "郵便番号の形式が不正です（例: 123-4567）");
+    }
+}
+
+// 都道府県：必須
+function validatePrefecture() {
+    removeFieldError(document.edit.prefecture);
+    if (document.edit.prefecture.value.trim() === "") {
+        errorElement(document.edit.prefecture, "都道府県を選択してください。");
+    }
+}
+
+// 市区町村：必須
+function validateCityTown() {
+    removeFieldError(document.edit.city_town);
+    if (document.edit.city_town.value.trim() === "") {
+        errorElement(document.edit.city_town, "市区町村を入力してください。");
+    }
+}
+
+// 電話番号：必須＋形式チェック
+function validateTelField() {
+    removeFieldError(document.edit.tel);
+    const val = document.edit.tel.value;
+    if (val.trim() === "") {
+        errorElement(document.edit.tel, "電話番号を入力してください。");
+    } else if (!validateTel(val)) {
+        errorElement(document.edit.tel, "電話番号の形式が不正です（例: 090-1234-5678）");
+    }
+}
+
+// メールアドレス：必須＋形式チェック
+function validateEmailField() {
+    removeFieldError(document.edit.email);
+    const val = document.edit.email.value;
+    if (val.trim() === "") {
+        errorElement(document.edit.email, "メールアドレスを入力してください。");
+    } else if (!validateMail(val)) {
+        errorElement(document.edit.email, "メールアドレスの形式が不正です。");
+    }
+}
+
+// 本人確認書類（表）：形式チェック
+function validateDocument1() {
+    removeFieldError(document.edit.document1);
+    const file = document.edit.document1.files[0];
+    if (file && !["image/png", "image/jpeg"].includes(file.type)) {
+        errorElement(document.edit.document1, "PNGまたはJPEG形式の画像をアップロードしてください。");
+    }
+    // TODO: ファイルサイズのチェック（最大5MBなど）
+}
+
+// 本人確認書類（裏）：形式チェック
+function validateDocument2() {
+    removeFieldError(document.edit.document2);
+    const file = document.edit.document2.files[0];
+    if (file && !["image/png", "image/jpeg"].includes(file.type)) {
+        errorElement(document.edit.document2, "PNGまたはJPEG形式の画像をアップロードしてください。");
+    }
+    // TODO: ファイルサイズのチェック（最大5MBなど）
+}
+
+// ==========================
+// ユーティリティ関数群
+// ==========================
+
+/**
  * 指定項目にエラーメッセージを表示し、スタイルを適用します。
  * @param {*} form 対象の入力項目
  * @param {*} msg 表示するエラーメッセージ
  */
-var errorElement = function (form, msg) {
-    form.className = "error-form";
-    var newElement = document.createElement("div");
+function errorElement(form, msg) {
+    form.classList.add("error-form");
+    const newElement = document.createElement("div");
     newElement.className = "error";
-    var newText = document.createTextNode(msg);
-    newElement.appendChild(newText);
+    newElement.textContent = msg;
     form.parentNode.insertBefore(newElement, form.nextSibling);
 }
 
@@ -122,8 +155,8 @@ var errorElement = function (form, msg) {
  * 指定されたクラス名の要素をすべて削除します（エラーメッセージの削除）。
  * @param {*} className 対象のクラス名
  */
-var removeElementsByClass = function (className) {
-    var elements = document.getElementsByClassName(className);
+function removeElementsByClass(className) {
+    const elements = document.getElementsByClassName(className);
     while (elements.length > 0) {
         elements[0].parentNode.removeChild(elements[0]);
     }
@@ -133,11 +166,29 @@ var removeElementsByClass = function (className) {
  * 指定クラスを持つすべての要素からクラスを除去します（エラースタイルの削除）。
  * @param {*} className 対象のクラス名
  */
-var removeClass = function (className) {
-    var elements = document.getElementsByClassName(className);
-    while (elements.length > 0) {
-        elements[0].className = "";
+function removeClass(className) {
+    const elements = document.getElementsByClassName(className);
+    for (let i = 0; i < elements.length; i++) {
+        elements[i].classList.remove(className);
     }
+}
+
+/**
+ * 特定のフィールドだけエラーメッセージとスタイルを削除
+ */
+function removeFieldError(field) {
+    field.classList.remove("error-form");
+    const next = field.nextSibling;
+    if (next && next.className === "error") {
+        next.remove();
+    }
+}
+
+/**
+ * 指定フィールドにエラーがあるかどうか
+ */
+function hasError(field) {
+    return field.classList.contains("error-form");
 }
 
 /**
@@ -145,7 +196,7 @@ var removeClass = function (className) {
  * @param {*} val チェック対象文字列
  * @returns true: 有効な形式, false: 無効な形式
  */
-var validateMail = function (val) {
+function validateMail(val) {
     return /^[A-Za-z0-9]{1}[A-Za-z0-9_.-]*@[A-Za-z0-9_.-]+\.[A-Za-z0-9]+$/.test(val);
 }
 
@@ -154,7 +205,7 @@ var validateMail = function (val) {
  * @param {*} val チェック対象文字列
  * @returns true: 有効な形式, false: 無効な形式
  */
-var validateTel = function (val) {
+function validateTel(val) {
     return /^[0-9]{2,4}-[0-9]{2,4}-[0-9]{3,4}$/.test(val);
 }
 
@@ -163,6 +214,6 @@ var validateTel = function (val) {
  * @param {*} val チェック対象文字列
  * @returns true: ひらがなのみ, false: その他の文字を含む
  */
-var validateKana = function (val) {
+function validateKanaFormat(val) {
     return /^[ぁ-んー]+$/.test(val);
 }
