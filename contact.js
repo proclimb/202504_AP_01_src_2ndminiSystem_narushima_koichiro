@@ -10,6 +10,9 @@ function validate() {
     // 全項目をチェック（送信時）
     validateName(); if (hasError(document.edit.name)) flag = false;
     validateKana(); if (hasError(document.edit.kana)) flag = false;
+    validateBirthDate(); if (hasError(document.edit.birth_year) ||
+        hasError(document.edit.birth_month) ||
+        hasError(document.edit.birth_day)) flag = false;
     validatePostalCode(); if (hasError(document.edit.postal_code)) flag = false;
     validatePrefecture(); if (hasError(document.edit.prefecture)) flag = false;
     validateCityTown(); if (hasError(document.edit.city_town)) flag = false;
@@ -33,6 +36,9 @@ window.addEventListener("DOMContentLoaded", function () {
 
     form.name.addEventListener("input", validateName);
     form.kana.addEventListener("input", validateKana);
+    form.birth_year.addEventListener("change", validateBirthDate);
+    form.birth_month.addEventListener("change", validateBirthDate);
+    form.birth_day.addEventListener("change", validateBirthDate);
     form.postal_code.addEventListener("input", validatePostalCode);
     form.prefecture.addEventListener("change", validatePrefecture);
     form.city_town.addEventListener("input", validateCityTown);
@@ -49,21 +55,94 @@ window.addEventListener("DOMContentLoaded", function () {
 // お名前：必須
 function validateName() {
     removeFieldError(document.edit.name);
-    if (document.edit.name.value.trim() === "") {
-        errorElement(document.edit.name, "名前を入力してください。");
+    const field = document.edit.name;
+    const val = field.value.trim();
+
+    // 1. 空チェック
+    if (val === "") {
+        errorElement(field, "名前が入力されていません");
+        return;
+    }
+
+    // 2. 使用可能文字チェック（漢字・ひらがな・カタカナ・スペース）
+    const namePattern = /^[\p{Script=Han}\u3040-\u309F\u30A0-\u30FF\u30FC\u0020\u3000]+$/u;
+    if (!namePattern.test(val)) {
+        errorElement(field, "入力できるのは漢字・ひらがな・カタカナのみです");
+        return;
+    }
+
+    // 3. 最大文字数：20文字以内（全角対応）
+    if (Array.from(val).length > 20) {
+        errorElement(field, "名前は20文字以内で入力してください");
     }
 }
 
 // ふりがな：必須＋ひらがなチェック
 function validateKana() {
     removeFieldError(document.edit.kana);
-    const val = document.edit.kana.value;
-    if (val.trim() === "") {
-        errorElement(document.edit.kana, "ふりがなを入力してください。");
-    } else if (!validateKanaFormat(val)) {
-        errorElement(document.edit.kana, "ふりがなはひらがなで入力してください。");
+    const field = document.edit.kana;
+    const val = field.value.trim();
+
+    // 1. 空欄チェック
+    if (val === "") {
+        errorElement(field, "ふりがなが入力されていません");
+        return;
+    }
+
+    // 2. ひらがな・スペース・長音符以外の文字が含まれていないか
+    const invalidChars = /[^ぁ-んー\u0020\u3000]/u; // 半角・全角スペース
+    if (invalidChars.test(val)) {
+        errorElement(field, "ひらがなで入力してください");
+        return;
+    }
+
+    // 3. 最大文字数（20文字）チェック（全角対応）
+    if (Array.from(val).length > 20) {
+        errorElement(field, "ふりがなは20文字以内で入力してください");
     }
 }
+
+// 生年月日：入力と妥当性のチェック
+function validateBirthDate() {
+    removeFieldError(document.edit.birth_year);
+    removeFieldError(document.edit.birth_month);
+    removeFieldError(document.edit.birth_day);
+
+    const year = document.edit.birth_year.value.trim();
+    const month = document.edit.birth_month.value.trim();
+    const day = document.edit.birth_day.value.trim();
+
+    // 1. 未入力チェック
+    if (!year || !month || !day) {
+        errorElement(document.edit.birth_year, "生年月日が入力されていません");
+        return;
+    }
+
+    const y = parseInt(year, 10);
+    const m = parseInt(month, 10);
+    const d = parseInt(day, 10);
+
+    // 2. 日付の妥当性チェック
+    const inputDate = new Date(y, m - 1, d); // 月は0始まり
+    if (
+        inputDate.getFullYear() !== y ||
+        inputDate.getMonth() + 1 !== m ||
+        inputDate.getDate() !== d
+    ) {
+        errorElement(document.edit.birth_year, "生年月日が正しくありません");
+        return;
+    }
+
+    // 3. 未来日チェック
+    const today = new Date();
+    inputDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (inputDate > today) {
+        errorElement(document.edit.birth_year, "生年月日が正しくありません");
+    }
+}
+
 
 // 郵便番号：必須＋形式チェック
 function validatePostalCode() {
@@ -114,25 +193,46 @@ function validateEmailField() {
     }
 }
 
-// 本人確認書類（表）：形式チェック
+// 本人確認書類（表）：必須＋拡張子＋サイズチェック
 function validateDocument1() {
     removeFieldError(document.edit.document1);
     const file = document.edit.document1.files[0];
-    if (file && !["image/png", "image/jpeg"].includes(file.type)) {
-        errorElement(document.edit.document1, "PNGまたはJPEG形式の画像をアップロードしてください。");
+
+    if (!file) {
+        errorElement(document.edit.document1, "本人確認書類（表）を選択してください。");
+        return;
     }
-    // TODO: ファイルサイズのチェック（最大5MBなど）
+
+    const fileName = file.name.toLowerCase();
+    const maxSize = 3 * 1024 * 1024; // 3MB
+
+    if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
+        errorElement(document.edit.document1, "ファイルの拡張子は JPG、JPEG、PNG のいずれかにしてください。");
+    } else if (file.size > maxSize) {
+        errorElement(document.edit.document1, "ファイルサイズは3MB以下にしてください。");
+    }
 }
 
-// 本人確認書類（裏）：形式チェック
+// 本人確認書類（裏）：必須＋拡張子＋サイズチェック
 function validateDocument2() {
     removeFieldError(document.edit.document2);
     const file = document.edit.document2.files[0];
-    if (file && !["image/png", "image/jpeg"].includes(file.type)) {
-        errorElement(document.edit.document2, "PNGまたはJPEG形式の画像をアップロードしてください。");
+
+    if (!file) {
+        errorElement(document.edit.document2, "本人確認書類（裏）を選択してください。");
+        return;
     }
-    // TODO: ファイルサイズのチェック（最大5MBなど）
+
+    const fileName = file.name.toLowerCase();
+    const maxSize = 3 * 1024 * 1024; // 3MB
+
+    if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
+        errorElement(document.edit.document2, "ファイルの拡張子は JPG、JPEG、PNG のいずれかにしてください。");
+    } else if (file.size > maxSize) {
+        errorElement(document.edit.document2, "ファイルサイズは3MB以下にしてください。");
+    }
 }
+
 
 // ==========================
 // ユーティリティ関数群
@@ -215,5 +315,5 @@ function validateTel(val) {
  * @returns true: ひらがなのみ, false: その他の文字を含む
  */
 function validateKanaFormat(val) {
-    return /^[ぁ-んー]+$/.test(val);
+    return /^[ぁ-んー\s\u3000]+$/.test(val);
 }
