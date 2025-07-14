@@ -200,11 +200,38 @@ function validateAddress() {
 // 電話番号：必須＋形式チェック
 function validateTelField() {
     removeFieldError(document.edit.tel);
-    const val = document.edit.tel.value;
-    if (val.trim() === "") {
-        errorElement(document.edit.tel, "電話番号を入力してください。");
-    } else if (!validateTel(val)) {
-        errorElement(document.edit.tel, "電話番号の形式が不正です（例: 090-1234-5678）");
+    const field = document.edit.tel;
+    const val = field.value.trim();
+
+    // ① 未入力
+    if (val === "") {
+        errorElement(field, "電話番号が入力されていません");
+        return;
+    }
+
+    // ② 数字とハイフン以外が含まれている
+    if (!/^[0-9\-]+$/.test(val)) {
+        errorElement(field, "電話番号は半角数字をハイフンで区切って入力してください");
+        return;
+    }
+
+    // ③ 数字だけで6桁以上 → ハイフンがない完全な数値列
+    if (/^\d{6,}$/.test(val)) {
+        errorElement(field, "電話番号は半角数字をハイフンで区切って入力してください");
+        return;
+    }
+
+    // ④ ハイフンが2つ以上連続
+    if (/\-{2,}/.test(val)) {
+        errorElement(field, "電話番号は12~13桁で正しく入力してください（例: 090-1234-5678）");
+        return;
+    }
+
+    // ⑤ 電話番号の形式が適切か + 長さチェック（12～13文字）
+    const format = /^0\d{1,4}-\d{1,4}-\d{3,4}$/;
+    if (!format.test(val) || val.length < 12 || val.length > 13) {
+        errorElement(field, "電話番号は12~13桁で正しく入力してください（例: 090-1234-5678）");
+        return;
     }
 }
 
