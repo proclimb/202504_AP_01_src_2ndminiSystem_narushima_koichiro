@@ -14,8 +14,9 @@ function validate() {
         hasError(document.edit.birth_month) ||
         hasError(document.edit.birth_day)) flag = false;
     validatePostalCode(); if (hasError(document.edit.postal_code)) flag = false;
-    validatePrefecture(); if (hasError(document.edit.prefecture)) flag = false;
-    validateCityTown(); if (hasError(document.edit.city_town)) flag = false;
+    validateAddress(); if (hasError(document.edit.prefecture) ||
+        hasError(document.edit.city_town) ||
+        hasError(document.edit.building)) flag = false;
     validateTelField(); if (hasError(document.edit.tel)) flag = false;
     validateEmailField(); if (hasError(document.edit.email)) flag = false;
     validateDocument1(); if (hasError(document.edit.document1)) flag = false;
@@ -40,8 +41,9 @@ window.addEventListener("DOMContentLoaded", function () {
     form.birth_month.addEventListener("change", validateBirthDate);
     form.birth_day.addEventListener("change", validateBirthDate);
     form.postal_code.addEventListener("input", validatePostalCode);
-    form.prefecture.addEventListener("change", validatePrefecture);
-    form.city_town.addEventListener("input", validateCityTown);
+    form.prefecture.addEventListener("change", validateAddress);
+    form.city_town.addEventListener("input", validateAddress);
+    form.building.addEventListener("input", validateAddress);
     form.tel.addEventListener("input", validateTelField);
     form.email.addEventListener("input", validateEmailField);
     form.document1.addEventListener("change", validateDocument1);
@@ -149,27 +151,51 @@ function validatePostalCode() {
     removeFieldError(document.edit.postal_code);
     const val = document.edit.postal_code.value;
     if (val.trim() === "") {
-        errorElement(document.edit.postal_code, "郵便番号を入力してください。");
+        errorElement(document.edit.postal_code, "郵便番号が入力されていません");
     } else if (!/^\d{3}-\d{4}$/.test(val)) {
-        errorElement(document.edit.postal_code, "郵便番号の形式が不正です（例: 123-4567）");
+        errorElement(document.edit.postal_code, "郵便番号は「000-0000」の形式で入力してください");
     }
 }
 
-// 都道府県：必須
-function validatePrefecture() {
-    removeFieldError(document.edit.prefecture);
-    if (document.edit.prefecture.value.trim() === "") {
-        errorElement(document.edit.prefecture, "都道府県を選択してください。");
+function validateAddress() {
+    const prefecture = document.edit.prefecture;
+    const cityTown = document.edit.city_town;
+    const building = document.edit.building;
+
+    removeFieldError(prefecture);
+    removeFieldError(cityTown);
+    removeFieldError(building);
+
+    const preVal = prefecture.value.trim();
+    const cityVal = cityTown.value.trim();
+    const buildVal = building.value.trim();
+
+    // 両方空
+    if (preVal === "" && cityVal === "") {
+        errorElement(prefecture, "住所が入力されていません");
+        return;
+    }
+
+    // 都道府県だけ空
+    if (preVal === "") {
+        errorElement(prefecture, "都道府県が入力されていません");
+    } else if (preVal.length > 10) {
+        errorElement(prefecture, "都道府県は10文字以内で入力してください");
+    }
+
+    // 市区町村だけ空
+    if (cityVal === "") {
+        errorElement(cityTown, "市区町村・番地以下の住所が入力されていません");
+    } else if (cityVal.length > 50) {
+        errorElement(cityTown, "市区町村・番地は50文字以内で入力してください");
+    }
+
+    // 建物名は任意だが50文字以内制限あり
+    if (buildVal.length > 50) {
+        errorElement(building, "建物名は50文字以内で入力してください");
     }
 }
 
-// 市区町村：必須
-function validateCityTown() {
-    removeFieldError(document.edit.city_town);
-    if (document.edit.city_town.value.trim() === "") {
-        errorElement(document.edit.city_town, "市区町村を入力してください。");
-    }
-}
 
 // 電話番号：必須＋形式チェック
 function validateTelField() {
