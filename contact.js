@@ -209,7 +209,6 @@ function validateAddress() {
     removeFieldError(prefecture);
     removeFieldError(cityTown);
     removeFieldError(building);
-    removeAddressError();
 
     const preVal = prefecture.value.trim();
     const cityVal = cityTown.value.trim();
@@ -358,12 +357,17 @@ function errorElement(target, msg) {
 }
 
 function errorElement2(target, msg) {
-    removeFieldError(target); // 共通の削除関数を使う（あとで拡張）
+    removeFieldError(target); // ここで .error-msg2 も削除される
     target.classList.add("error-form");
+
     const newElement = document.createElement("div");
     newElement.className = "error-msg2";
     newElement.textContent = msg;
-    target.parentNode.insertBefore(newElement, target.nextSibling);
+
+    const grandParent = target.parentNode?.parentNode;
+    if (grandParent) {
+        grandParent.appendChild(newElement);
+    }
 }
 
 function removeElementsByClass(className) {
@@ -382,12 +386,21 @@ function removeClass(className) {
 
 function removeFieldError(field) {
     field.classList.remove("error-form");
+
+    // 通常の .error-msg を削除（兄弟要素）
     let next = field.nextSibling;
     while (next && next.nodeType !== 1) {
         next = next.nextSibling;
     }
-    if (next && (next.classList.contains("error-msg") || next.classList.contains("error-msg2"))) {
+    if (next && next.classList.contains("error-msg")) {
         next.remove();
+    }
+
+    // 特別な .error-msg2（1階層上に表示されたもの）を削除
+    const grandParent = field.parentNode?.parentNode;
+    if (grandParent) {
+        const msgs = grandParent.querySelectorAll('.error-msg2');
+        msgs.forEach(msg => msg.remove());
     }
 }
 
