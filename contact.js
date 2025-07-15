@@ -9,7 +9,7 @@ function validate() {
     let flag = true;
 
     // 既存のエラー表示をクリア
-    removeElementsByClass("error-message");
+    removeElementsByClass("error-msg");
     removeClass("error-form");
 
     // 各項目のバリデーションを実行
@@ -158,7 +158,7 @@ function validateBirthDate() {
     const day = dayField.value.trim();
 
     if (!year || !month || !day) {
-        errorElement(yearField, "生年月日が入力されていません");
+        errorElement2(yearField, "生年月日が入力されていません");
         return;
     }
 
@@ -168,7 +168,7 @@ function validateBirthDate() {
     const inputDate = new Date(y, m - 1, d);
 
     if (inputDate.getFullYear() !== y || inputDate.getMonth() + 1 !== m || inputDate.getDate() !== d) {
-        errorElement(yearField, "生年月日が正しくありません");
+        errorElement2(yearField, "生年月日が正しくありません");
         return;
     }
 
@@ -177,7 +177,7 @@ function validateBirthDate() {
     today.setHours(0, 0, 0, 0);
 
     if (inputDate > today) {
-        errorElement(yearField, "生年月日が正しくありません");
+        errorElement2(yearField, "生年月日が正しくありません");
     }
 }
 
@@ -191,9 +191,9 @@ function validatePostalCode() {
     const val = field.value.trim();
 
     if (val === "") {
-        errorElement(field, "郵便番号が入力されていません");
+        errorElement2(field, "郵便番号が入力されていません");
     } else if (!/^\d{3}-\d{4}$/.test(val)) {
-        errorElement(field, "郵便番号は「000-0000」の形式で入力してください");
+        errorElement2(field, "郵便番号は「000-0000」の形式で入力してください");
     }
 }
 
@@ -352,7 +352,16 @@ function errorElement(target, msg) {
     removeFieldError(target); // 先に既存メッセージを削除
     target.classList.add("error-form");
     const newElement = document.createElement("div");
-    newElement.className = "error-message";
+    newElement.className = "error-msg";
+    newElement.textContent = msg;
+    target.parentNode.insertBefore(newElement, target.nextSibling);
+}
+
+function errorElement2(target, msg) {
+    removeFieldError(target); // 共通の削除関数を使う（あとで拡張）
+    target.classList.add("error-form");
+    const newElement = document.createElement("div");
+    newElement.className = "error-msg2";
     newElement.textContent = msg;
     target.parentNode.insertBefore(newElement, target.nextSibling);
 }
@@ -377,7 +386,7 @@ function removeFieldError(field) {
     while (next && next.nodeType !== 1) {
         next = next.nextSibling;
     }
-    if (next && next.classList.contains("error-message")) {
+    if (next && (next.classList.contains("error-msg") || next.classList.contains("error-msg2"))) {
         next.remove();
     }
 }
