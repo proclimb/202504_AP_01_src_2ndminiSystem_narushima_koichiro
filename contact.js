@@ -382,13 +382,6 @@ function removeFieldError(field) {
     }
 }
 
-function removeAddressError() {
-    const error = document.querySelector(".address-error");
-    if (error) {
-        error.remove();
-    }
-}
-
 function hasError(field) {
     return field.classList.contains("error-form");
 }
