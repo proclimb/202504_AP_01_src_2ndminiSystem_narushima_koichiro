@@ -9,7 +9,7 @@ function validate() {
     let flag = true;
 
     // 既存のエラー表示をクリア
-    removeElementsByClass("error");
+    removeElementsByClass("error-message");
     removeClass("error-form");
 
     // 各項目のバリデーションを実行
@@ -349,9 +349,10 @@ function validateDocument2() {
 // ==========================
 
 function errorElement(target, msg) {
+    removeFieldError(target); // 先に既存メッセージを削除
     target.classList.add("error-form");
     const newElement = document.createElement("div");
-    newElement.className = "error address-error";
+    newElement.className = "error-message";
     newElement.textContent = msg;
     target.parentNode.insertBefore(newElement, target.nextSibling);
 }
@@ -376,7 +377,7 @@ function removeFieldError(field) {
     while (next && next.nodeType !== 1) {
         next = next.nextSibling;
     }
-    if (next && next.classList.contains("error")) {
+    if (next && next.classList.contains("error-message")) {
         next.remove();
     }
 }
