@@ -357,11 +357,11 @@ function errorElement(target, msg) {
 }
 
 function errorElement2(target, msg) {
-    removeFieldError(target); // ここで .error-msg2 も削除される
+    removeFieldError(target); // 対象だけ削除
     target.classList.add("error-form");
 
     const newElement = document.createElement("div");
-    newElement.className = "error-msg2";
+    newElement.className = `error-msg2 error-msg2-${target.name}`; // ←個別クラスを付加
     newElement.textContent = msg;
 
     const grandParent = target.parentNode?.parentNode;
@@ -387,7 +387,7 @@ function removeClass(className) {
 function removeFieldError(field) {
     field.classList.remove("error-form");
 
-    // 通常の .error-msg を削除（兄弟要素）
+    // .error-msg（兄弟）の削除
     let next = field.nextSibling;
     while (next && next.nodeType !== 1) {
         next = next.nextSibling;
@@ -396,10 +396,10 @@ function removeFieldError(field) {
         next.remove();
     }
 
-    // 特別な .error-msg2（1階層上に表示されたもの）を削除
+    // .error-msg2 のうち、field に対応する全要素を削除
     const grandParent = field.parentNode?.parentNode;
     if (grandParent) {
-        const msgs = grandParent.querySelectorAll('.error-msg2');
+        const msgs = grandParent.querySelectorAll(`.error-msg2-${field.name}`);
         msgs.forEach(msg => msg.remove());
     }
 }
