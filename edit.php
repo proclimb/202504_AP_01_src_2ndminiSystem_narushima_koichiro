@@ -250,10 +250,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         name="building"
                         placeholder="建物名・部屋番号  **省略可**"
                         value="<?= htmlspecialchars($old['building'] ?? '') ?>">
-                    <div id="address-error-container"></div>
                     <?php if (isset($error_message['address'])) : ?>
                         <div class="error-msg"><?= htmlspecialchars($error_message['address']) ?></div>
                     <?php endif; ?>
+                    <div id="address-error-container"></div>
                 </div>
                 <div>
                     <label>電話番号<span>必須</span></label>
