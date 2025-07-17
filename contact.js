@@ -64,7 +64,7 @@ window.addEventListener("DOMContentLoaded", function () {
         form.elements["postal_code"].addEventListener("input", validatePostalCode);
     }
     if (form.elements["prefecture"]) {
-        form.elements["prefecture"].addEventListener("change", validateAddress);
+        form.elements["prefecture"].addEventListener("input", validateAddress);
     }
     if (form.elements["city_town"]) {
         form.elements["city_town"].addEventListener("input", validateAddress);
@@ -97,9 +97,9 @@ function validateName() {
     const form = document.forms["edit"];
     const field = form.elements["name"];
     removeFieldError(field);
-    const val = field.value.trim();
+    const val = field.value;
 
-    if (val === "") {
+    if (isBlank(val)) {
         errorElement(field, "名前が入力されていません");
         return;
     }
@@ -110,7 +110,7 @@ function validateName() {
         return;
     }
 
-    if (Array.from(val).length > 20) {
+    if (Array.from(val.trim()).length > 20) {
         errorElement(field, "名前は20文字以内で入力してください");
     }
 }
@@ -122,9 +122,9 @@ function validateKana() {
     const form = document.forms["edit"];
     const field = form.elements["kana"];
     removeFieldError(field);
-    const val = field.value.trim();
+    const val = field.value;
 
-    if (val === "") {
+    if (isBlank(val)) {
         errorElement(field, "ふりがなが入力されていません");
         return;
     }
@@ -135,7 +135,7 @@ function validateKana() {
         return;
     }
 
-    if (Array.from(val).length > 20) {
+    if (Array.from(val.trim()).length > 20) {
         errorElement(field, "ふりがなは20文字以内で入力してください");
     }
 }
@@ -205,42 +205,81 @@ function validatePostalCode() {
  */
 function validateAddress() {
     const form = document.forms["edit"];
-    const prefecture = form.elements["prefecture"];
-    const cityTown = form.elements["city_town"];
-    const building = form.elements["building"];
+    const fields = {
+        prefecture: form.elements["prefecture"],
+        cityTown: form.elements["city_town"],
+        building: form.elements["building"],
+    };
 
-    removeFieldError(prefecture);
-    removeFieldError(cityTown);
-    removeFieldError(building);
+    const touched = {
+        prefecture: fields.prefecture.dataset.touched === "true",
+        cityTown: fields.cityTown.dataset.touched === "true",
+    };
 
-    const preVal = prefecture.value.trim();
-    const cityVal = cityTown.value.trim();
-    const buildVal = building.value.trim();
+    Object.values(fields).forEach(removeFieldError);
 
-    if (preVal === "" && cityVal === "") {
-        errorElement(building, "住所が入力されていません");
-        return;
+    const container = document.getElementById("address-error-container");
+    if (container) container.innerHTML = "";
+
+    const values = {
+        prefecture: fields.prefecture.value.trim(),
+        cityTown: fields.cityTown.value.trim(),
+        building: fields.building.value.trim(),
+    };
+
+    const isEmpty = {
+        prefecture: isBlank(values.prefecture),
+        cityTown: isBlank(values.cityTown),
+    };
+
+    let hasError = false;
+    let errorMessages = [];
+
+    // 共通のエラー追加処理
+    const addError = (element, message) => {
+        element.classList.add("error-form");
+        errorMessages.push(message);
+    };
+
+    // 都道府県のチェック
+    if (touched.prefecture && (!touched.cityTown || !isEmpty.cityTown)) {
+        if (isEmpty.prefecture) {
+            addError(fields.prefecture, "都道府県が入力されていません");
+        } else if (values.prefecture.length > 10) {
+            addError(fields.prefecture, "都道府県は10文字以内で入力してください");
+        } else if (!/^[\u4E00-\u9FFF]+$/.test(values.prefecture)) {
+            addError(fields.prefecture, "都道府県は漢字のみで入力してください");
+        }
     }
 
-    if (preVal === "") {
-        errorElement(building, "都道府県が入力されていません");
-        return;
-    } else if (preVal.length > 10) {
-        errorElement(building, "都道府県は10文字以内で入力してください");
-        return;
+    // 市区町村のチェック
+    if (touched.cityTown && (!touched.prefecture || !isEmpty.prefecture)) {
+        if (isEmpty.cityTown) {
+            addError(fields.cityTown, "市区町村・番地以下の住所が入力されていません");
+        } else if (values.cityTown.length > 50) {
+            addError(fields.cityTown, "市区町村・番地は50文字以内で入力してください");
+        }
     }
 
-    if (cityVal === "") {
-        errorElement(building, "市区町村・番地以下の住所が入力されていません");
-        return;
-    } else if (cityVal.length > 50) {
-        errorElement(building, "市区町村・番地は50文字以内で入力してください");
-        return;
+    // 両方 touched かつ両方空欄 → 総合メッセージ
+    if (touched.prefecture && touched.cityTown && isEmpty.prefecture && isEmpty.cityTown) {
+        addError(fields.prefecture, "");
+        addError(fields.cityTown, "");
+        errorMessages = ["都道府県・市区町村以下の住所が入力されていません"];
     }
 
-    if (buildVal.length > 50) {
-        errorElement(building, "建物名は50文字以内で入力してください");
+    // 建物名チェック
+    if (values.building.length > 50) {
+        addError(fields.building, "建物名は50文字以内で入力してください");
     }
+
+    // エラー表示
+    if (errorMessages.length > 0) {
+        errorAddress(errorMessages.join("<br>"));
+        hasError = true;
+    }
+
+    return !hasError;
 }
 
 /**
@@ -373,6 +412,16 @@ function errorElement2(target, msg) {
     }
 }
 
+function errorAddress(msg) {
+    const container = document.getElementById("address-error-container");
+    if (!container) return;
+    container.innerHTML = ""; // 一旦クリア
+    const error = document.createElement("div");
+    error.className = "error-msg";
+    error.textContent = msg;
+    container.appendChild(error);
+}
+
 function removeElementsByClass(className) {
     const elements = document.getElementsByClassName(className);
     while (elements.length > 0) {
@@ -406,3 +455,28 @@ function removeFieldError(field) {
 function hasError(field) {
     return field.classList.contains("error-form");
 }
+
+/**
+ * 入力値が全角・半角スペースのみかどうかを判定（空文字として扱う）
+ */
+function isBlank(value) {
+    return value.replace(/[\s　]/g, "") === "";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.forms["edit"];
+    const prefecture = form.elements["prefecture"];
+    const cityTown = form.elements["city_town"];
+
+    // 入力履歴用フラグの初期化（data属性はHTML上でも可）
+    prefecture.dataset.touched = "false";
+    cityTown.dataset.touched = "false";
+
+    // ユーザーが入力を開始したら、touchedフラグを true に更新
+    prefecture.addEventListener("input", () => {
+        prefecture.dataset.touched = "true";
+    });
+    cityTown.addEventListener("input", () => {
+        cityTown.dataset.touched = "true";
+    });
+});
