@@ -149,6 +149,9 @@ function validateBirthDate() {
     const monthField = form.elements["birth_month"];
     const dayField = form.elements["birth_day"];
 
+    // 既存のエラーメッセージを明示的に削除（各フィールド名に対応）
+    document.querySelectorAll(".error-msg2-birth_year, .error-msg2-birth_month, .error-msg2-birth_day").forEach(el => el.remove());
+
     removeFieldError(yearField);
     removeFieldError(monthField);
     removeFieldError(dayField);
@@ -397,11 +400,7 @@ function removeFieldError(field) {
     }
 
     // .error-msg2 のうち、field に対応する全要素を削除
-    const grandParent = field.parentNode?.parentNode;
-    if (grandParent) {
-        const msgs = grandParent.querySelectorAll(`.error-msg2-${field.name}`);
-        msgs.forEach(msg => msg.remove());
-    }
+    document.querySelectorAll(`.error-msg2-${field.name}`).forEach(msg => msg.remove());
 }
 
 function hasError(field) {
