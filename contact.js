@@ -337,17 +337,18 @@ function validateEmailField() {
     }
 }
 
+
 /**
- * 本人確認書類（表）：必須＋拡張子＋サイズチェック
+ * 本人確認書類（表・裏）：必須＋拡張子＋サイズチェック（共通化）
  */
-function validateDocument1() {
+function validateDocumentField(fieldName, label) {
     const form = document.forms["edit"];
-    const field = form.elements["document1"];
+    const field = form.elements[fieldName];
     removeFieldError(field);
 
     const file = field.files[0];
     if (!file) {
-        errorElement(field, "本人確認書類（表）を選択してください。");
+        errorElement(field, `本人確認書類（${label}）を選択してください。`);
         return;
     }
 
@@ -356,35 +357,18 @@ function validateDocument1() {
     const maxSize = maxSizeMB * 1024 * 1024; // バイトに変換
 
     if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
-        errorElement(field, "本人確認書類（表）の形式が正しくありません（PNG / JPEG）");
+        errorElement(field, `本人確認書類（${label}）の形式が正しくありません（PNG / JPEG）`);
     } else if (file.size > maxSize) {
-        errorElement(field, `本人確認書類（表）のファイルサイズが大きすぎます（最大${maxSizeMB}MB）`);
+        errorElement(field, `本人確認書類（${label}）のファイルサイズが大きすぎます（最大${maxSizeMB}MB）`);
     }
 }
 
-/**
- * 本人確認書類（裏）：必須＋拡張子＋サイズチェック
- */
+function validateDocument1() {
+    validateDocumentField("document1", "表");
+}
+
 function validateDocument2() {
-    const form = document.forms["edit"];
-    const field = form.elements["document2"];
-    removeFieldError(field);
-
-    const file = field.files[0];
-    if (!file) {
-        errorElement(field, "本人確認書類（裏）を選択してください。");
-        return;
-    }
-
-    const fileName = file.name.toLowerCase();
-    const maxSizeMB = 3; // 最大サイズ（MB単位）
-    const maxSize = maxSizeMB * 1024 * 1024; // バイトに変換
-
-    if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
-        errorElement(field, "本人確認書類（裏）の形式が正しくありません（PNG / JPEG）");
-    } else if (file.size > maxSize) {
-        errorElement(field, `本人確認書類（裏）のファイルサイズが大きすぎます（最大${maxSizeMB}MB）`);
-    }
+    validateDocumentField("document2", "裏");
 }
 
 // ==========================
