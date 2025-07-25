@@ -182,7 +182,7 @@ class Validator
     private function validateDocument($fileKey, $label)
     {
         $allowedTypes = ['image/png', 'image/jpeg'];
-        $maxSizeMB = 5; // 最大ファイルサイズ 5MB
+        $maxSizeMB = 3; // 最大ファイルサイズ 3MB
         if (isset($_FILES[$fileKey]) && $_FILES[$fileKey]['error'] === UPLOAD_ERR_OK) {
             $fileType = mime_content_type($_FILES[$fileKey]['tmp_name']);
             $fileSize = $_FILES[$fileKey]['size'];
