@@ -352,12 +352,13 @@ function validateDocument1() {
     }
 
     const fileName = file.name.toLowerCase();
-    const maxSize = 3 * 1024 * 1024;
+    const maxSizeMB = 3; // 最大サイズ（MB単位）
+    const maxSize = maxSizeMB * 1024 * 1024; // バイトに変換
 
     if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
-        errorElement(field, "ファイルの拡張子は JPG、JPEG、PNG のいずれかにしてください。");
+        errorElement(field, "本人確認書類（表）の形式が正しくありません（PNG / JPEG）");
     } else if (file.size > maxSize) {
-        errorElement(field, "ファイルサイズは3MB以下にしてください。");
+        errorElement(field, `本人確認書類（表）のファイルサイズが大きすぎます（最大${maxSizeMB}MB）`);
     }
 }
 
@@ -376,12 +377,13 @@ function validateDocument2() {
     }
 
     const fileName = file.name.toLowerCase();
-    const maxSize = 3 * 1024 * 1024;
+    const maxSizeMB = 3; // 最大サイズ（MB単位）
+    const maxSize = maxSizeMB * 1024 * 1024; // バイトに変換
 
     if (!(/\.(jpg|jpeg|png)$/i).test(fileName)) {
-        errorElement(field, "ファイルの拡張子は JPG、JPEG、PNG のいずれかにしてください。");
+        errorElement(field, "本人確認書類（裏）の形式が正しくありません（PNG / JPEG）");
     } else if (file.size > maxSize) {
-        errorElement(field, "ファイルサイズは3MB以下にしてください。");
+        errorElement(field, `本人確認書類（裏）のファイルサイズが大きすぎます（最大${maxSizeMB}MB）`);
     }
 }
 
