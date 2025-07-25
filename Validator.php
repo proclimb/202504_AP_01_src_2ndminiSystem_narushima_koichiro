@@ -48,7 +48,7 @@ class Validator
 
         // 生年月日
         if (empty($data['birth_year']) || empty($data['birth_month']) || empty($data['birth_day'])) {
-            $this->error_message['birth_date'] = '生年月日が入力されていません';
+            $this->error_message['birth_date'] = '生年月日に未入力があります';
         } elseif (!$this->isValidDate($data['birth_year'] ?? '', $data['birth_month'] ?? '', $data['birth_day'] ?? '')) {
             $this->error_message['birth_date'] = '生年月日が正しくありません';
         } else {

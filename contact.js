@@ -161,7 +161,7 @@ function validateBirthDate() {
     const day = dayField.value.trim();
 
     if (!year || !month || !day) {
-        errorElement2(yearField, "生年月日が入力されていません");
+        errorElement2(yearField, "生年月日に未入力があります");
         return;
     }
 
