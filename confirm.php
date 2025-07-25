@@ -64,8 +64,8 @@ session_destroy();
             <input type="hidden" name="building" value="<?php echo $_POST['building'] ?>">
             <input type="hidden" name="tel" value="<?php echo $_POST['tel'] ?>">
             <input type="hidden" name="email" value="<?php echo $_POST['email'] ?>">
-            <h1 class="contact-title">登録内容入力</h1>
-            <p>登録内容をご入力の上、「登録する」ボタンをクリックしてください。</p>
+            <h1 class="contact-title">登録内容の確認</h1>
+            <p>内容に間違いがなければ、「登録する」ボタンをクリックしてください。</p>
             <div>
                 <div>
                     <label>お名前</label>
