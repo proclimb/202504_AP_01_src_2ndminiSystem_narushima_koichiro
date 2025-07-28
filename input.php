@@ -41,24 +41,22 @@ session_start();
 // 2.変数の初期化
 // *$_POSTの値があるときは初期化しない
 $error_message = [];
-$old = $_POST ?? [];
+if (!empty($_SESSION['input_data'])) {
+    $old = $_SESSION['input_data'];
+} else {
+    $old = $_POST ?? [];
+}
 
 // 3.入力項目の入力チェック
 if (!empty($_POST) && empty($_SESSION['input_data'])) {
-    $validator = new Validator($pdo);
+    $validator = new Validator($pdo); // ← $pdoを渡す
     if ($validator->validate($_POST)) {
         $_SESSION['input_data'] = $_POST;
-        $error_message = []; // ★エラー情報をクリア
         header('Location:confirm.php');
         exit();
     } else {
         $error_message = $validator->getErrors();
     }
-}
-
-// ★confirm.phpから戻ってきた場合はエラー情報をクリア
-if (!empty($_SESSION['input_data'])) {
-    $error_message = [];
 }
 
 // 4.セッションを破棄する

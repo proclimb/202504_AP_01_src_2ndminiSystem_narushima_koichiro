@@ -1,4 +1,6 @@
 <?php
+session_start();
+session_destroy();
 
 /**
  * 登録完了画面

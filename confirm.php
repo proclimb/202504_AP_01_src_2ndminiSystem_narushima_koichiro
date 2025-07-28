@@ -30,7 +30,7 @@ if (!isset($_SESSION['input_data'])) {
 $_POST = $_SESSION['input_data'];
 
 // 2.セッションを破棄する
-session_destroy();
+// session_destroy();
 
 // 3.htmlの描画
 ?>
@@ -114,7 +114,7 @@ session_destroy();
                     <p><?= htmlspecialchars($_POST['email']) ?></p>
                 </div>
             </div>
-            <input type="button" value="内容を修正する" onclick="history.back(-1)">
+            <a href="input.php"><button type="button">内容を修正する</button></a>
             <button type="submit" name="submit">登録する</button>
         </form>
     </div>
