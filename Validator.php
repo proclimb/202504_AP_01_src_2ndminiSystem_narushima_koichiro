@@ -93,7 +93,7 @@ class Validator
             $this->error_message['tel'] = '電話番号が入力されていません';
         } elseif (!preg_match('/^[0-9\-]+$/', $data['tel'])) {
             // 数字とハイフン以外が含まれている
-            $this->error_message['tel'] = '電話番号は半角数字をハイフンで区切って入力してください';
+            $this->error_message['tel'] = '入力できるのは半角数字とハイフンのみです';
         } elseif (preg_match('/^\d{6,}$/', $data['tel'])) {
             // 完全に数字だけで6桁以上（ハイフンなし）
             $this->error_message['tel'] = '電話番号は半角数字をハイフンで区切って入力してください';
