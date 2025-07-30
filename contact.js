@@ -320,6 +320,14 @@ function validateTelField() {
 /**
  * メールアドレス：必須＋形式チェック
  */
+function hasInvalidDomainPart(email) {
+    const parts = email.split("@");
+    if (parts.length !== 2) return true;
+    const domain = parts[1];
+    // ドメイン名の各セグメントがハイフンで始まらない＆終わらない
+    return domain.split(".").some(segment => segment.startsWith("-") || segment.endsWith("-"));
+}
+
 function validateEmailField() {
     const form = document.forms["edit"];
     const field = form.elements["email"];
@@ -331,12 +339,12 @@ function validateEmailField() {
         return;
     }
 
-    const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    if (!emailPattern.test(val)) {
+    const emailPattern = /^[A-Za-z0-9](?!.*?[._%+-]{2})[A-Za-z0-9._%+-]*@[A-Za-z0-9](?!.*?[.-]{2})[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+    if (!emailPattern.test(val) || hasInvalidDomainPart(val)) {
         errorElement(field, "有効なメールアドレスを入力してください");
     }
 }
-
 
 /**
  * 本人確認書類（表・裏）：必須＋拡張子＋サイズチェック（共通化）
