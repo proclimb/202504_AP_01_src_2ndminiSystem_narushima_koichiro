@@ -248,7 +248,7 @@ function validateAddress() {
         } else if (values.prefecture.length > 10) {
             addError(fields.prefecture, "都道府県は10文字以内で入力してください");
         } else if (!/^[\u4E00-\u9FFF]+$/.test(values.prefecture)) {
-            addError(fields.prefecture, "都道府県は漢字のみで入力してください");
+            addError(fields.prefecture, "都道府県は漢字で入力してください");
         }
     }
 
@@ -265,7 +265,7 @@ function validateAddress() {
     if (touched.prefecture && touched.cityTown && isEmpty.prefecture && isEmpty.cityTown) {
         addError(fields.prefecture, "");
         addError(fields.cityTown, "");
-        errorMessages = ["都道府県・市区町村以下の住所が入力されていません"];
+        errorMessages = ["住所が入力されていません"];
     }
 
     // 建物名チェック
@@ -297,7 +297,7 @@ function validateTelField() {
     }
 
     if (!/^[0-9\-]+$/.test(val)) {
-        errorElement(field, "電話番号は半角数字をハイフンで区切って入力してください");
+        errorElement(field, "入力できるのは半角数字とハイフンのみです");
         return;
     }
 
