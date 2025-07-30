@@ -406,13 +406,13 @@ function errorElement2(target, msg) {
     }
 }
 
-function errorAddress(msg) {
+function errorAddress(msgHtml) {
     const container = document.getElementById("address-error-container");
     if (!container) return;
     container.innerHTML = ""; // 一旦クリア
     const error = document.createElement("div");
     error.className = "error-msg";
-    error.textContent = msg;
+    error.innerHTML = msgHtml; // HTMLを解釈して表示するよう変更
     container.appendChild(error);
 }
 
