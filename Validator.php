@@ -85,8 +85,10 @@ class Validator
             $this->error_message['address'] = '都道府県は10文字以内で入力してください';
         } elseif (!preg_match('/^[一-龠々〆ヵヶ]+$/u', $data['prefecture'])) {
             $this->error_message['address'] = '都道府県は漢字で入力してください';
-        } elseif (mb_strlen($data['city_town']) > 50 || mb_strlen($data['building']) > 50) {
-            $this->error_message['address'] = '市区町村・番地もしくは建物名は50文字以内で入力してください';
+        } elseif (mb_strlen($data['city_town']) > 50) {
+            $this->error_message['address'] = '市区町村・番地は50文字以内で入力してください';
+        } elseif (mb_strlen($data['building']) > 50) {
+            $this->error_message['address'] = '建物名は50文字以内で入力してください';
         }
 
         // 電話番号
