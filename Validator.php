@@ -111,12 +111,23 @@ class Validator
         // 郵便番号と住所の整合性チェック
         $normalized_postal = str_replace('-', '', $data['postal_code']);
         $address = $this->getAddressByPostalCode($normalized_postal);
+
         if ($address) {
-            if (
-                $address['prefecture'] !== $data['prefecture']
-                || strpos($data['city_town'], $address['city']) === false
-            ) {
+            $input_prefecture = trim($data['prefecture']);
+            $input_city_town = trim($data['city_town']);
+
+            // 都道府県の整合性チェック
+            $prefecture_match = ($input_prefecture === $address['prefecture']);
+            $city_match = strpos($input_city_town, $address['city']) !== false;
+
+            // city_townの先頭に都道府県名があるかチェック
+            $starts_with_prefecture = (substr($input_city_town, 0, strlen($input_prefecture)) === $input_prefecture);
+
+            // エラーハンドリング
+            if (!$prefecture_match || !$city_match) {
                 $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
+            } elseif ($starts_with_prefecture) {
+                $this->error_message['address'] = '市区町村の入力欄から都道府県名を削除してください';
             }
         }
 
