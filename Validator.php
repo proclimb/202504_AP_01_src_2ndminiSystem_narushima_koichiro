@@ -74,21 +74,50 @@ class Validator
             $this->error_message['postal_code'] = '郵便番号は「000-0000」の形式で入力してください';
         }
 
-        // 住所
-        if (empty($data['prefecture']) && empty($data['city_town'])) {
-            $this->error_message['address'] = '住所が入力されていません';
-        } elseif (empty($data['prefecture'])) {
+        // 郵便番号チェック
+        if (empty($data['postal_code'])) {
+            $this->error_message['postal_code'] = '郵便番号が入力されていません';
+        } elseif (!preg_match('/^[0-9]{3}-[0-9]{4}$/', $data['postal_code'])) {
+            $this->error_message['postal_code'] = '郵便番号は「000-0000」の形式で入力してください';
+        }
+
+        // 都道府県チェック
+        if (empty($data['prefecture'])) {
             $this->error_message['address'] = '都道府県が入力されていません';
-        } elseif (empty($data['city_town'])) {
-            $this->error_message['address'] = '市区町村・番地以下の住所が入力されていません';
+            return;
         } elseif (mb_strlen($data['prefecture']) > 10) {
             $this->error_message['address'] = '都道府県は10文字以内で入力してください';
+            return;
         } elseif (!preg_match('/^[一-龠々〆ヵヶ]+$/u', $data['prefecture'])) {
             $this->error_message['address'] = '都道府県は漢字で入力してください';
+            return;
+        }
+
+        // 市区町村チェック
+        if (empty($data['city_town'])) {
+            $this->error_message['address'] = '市区町村・番地以下の住所が入力されていません';
+            return;
         } elseif (mb_strlen($data['city_town']) > 50) {
             $this->error_message['address'] = '市区町村・番地は50文字以内で入力してください';
-        } elseif (mb_strlen($data['building']) > 50) {
+            return;
+        }
+
+        // 建物チェック（任意）
+        if (!empty($data['building']) && mb_strlen($data['building']) > 50) {
             $this->error_message['address'] = '建物名は50文字以内で入力してください';
+            return;
+        }
+
+        // 郵便番号と住所の整合性チェック
+        $normalized_postal = str_replace('-', '', $data['postal_code']);
+        $address = $this->getAddressByPostalCode($normalized_postal);
+        if ($address) {
+            if (
+                $address['prefecture'] !== $data['prefecture']
+                || strpos($data['city_town'], $address['city']) === false
+            ) {
+                $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
+            }
         }
 
         // 電話番号
@@ -120,23 +149,6 @@ class Validator
             $this->error_message['email'] = '有効なメールアドレスを入力してください';
         } elseif ($this->emailExists($data['email'], $id)) { // ←idを渡す
             $this->error_message['email'] = 'このメールアドレスは既に存在します';
-        }
-
-        // 郵便番号・住所の整合性チェック
-        if (!empty($data['postal_code']) && !empty($data['prefecture']) && !empty($data['city_town'])) {
-            $normalized_postal = str_replace('-', '', $data['postal_code']);
-            $address = $this->getAddressByPostalCode($normalized_postal);
-            if ($address) {
-                // 都道府県チェック
-                if ($address['prefecture'] !== $data['prefecture']) {
-                    $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
-                }
-                // 市区町村チェック
-                elseif (strpos($data['city_town'], $address['city']) === false) {
-                    $this->error_message['address'] = '郵便番号と住所が異なります。内容をご確認ください';
-                }
-            }
-            // 郵便番号がDBに存在しない場合はスルー or 別エラー
         }
 
         // 本人確認書類（表）
