@@ -258,6 +258,8 @@ function validateAddress() {
             addError(fields.cityTown, "市区町村・番地以下の住所が入力されていません");
         } else if (values.cityTown.length > 50) {
             addError(fields.cityTown, "市区町村・番地は50文字以内で入力してください");
+        } else if (values.prefecture && values.cityTown.startsWith(values.prefecture)) {
+            addError(fields.cityTown, "市区町村の入力欄から都道府県名を削除してください");
         }
     }
 
