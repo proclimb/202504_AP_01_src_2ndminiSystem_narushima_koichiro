@@ -323,9 +323,13 @@ function validateTelField() {
 function hasInvalidDomainPart(email) {
     const parts = email.split("@");
     if (parts.length !== 2) return true;
+
     const domain = parts[1];
-    // ドメイン名の各セグメントがハイフンで始まらない＆終わらない
-    return domain.split(".").some(segment => segment.startsWith("-") || segment.endsWith("-"));
+    const segments = domain.split(".");
+
+    return segments.some(segment =>
+        segment === "" || segment.startsWith("-") || segment.endsWith("-")
+    );
 }
 
 function validateEmailField() {
@@ -339,7 +343,8 @@ function validateEmailField() {
         return;
     }
 
-    const emailPattern = /^[A-Za-z0-9](?!.*?[._%+-]{2})[A-Za-z0-9._%+-]*@[A-Za-z0-9](?!.*?[.-]{2})[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    // 基本的な形式チェック（@の前後に文字列、ドメインに.を含む）
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailPattern.test(val) || hasInvalidDomainPart(val)) {
         errorElement(field, "有効なメールアドレスを入力してください");
