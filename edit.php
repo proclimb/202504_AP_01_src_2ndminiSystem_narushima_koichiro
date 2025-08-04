@@ -302,18 +302,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?= !empty($old['front_image_name']) ? 'ファイルを更新' : 'ファイルを選択' ?>
                     </button>
                     <span id="filename1" class="filename-display"></span>
-                    <?php if (!empty($old['front_image_name'])): ?>
-                        <span id="existing-filename1">
+                    <span id="existing-filename1">
+                        <?php if (!empty($old['front_image_name'])): ?>
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
-                        </span>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <span class="unregistered">現在は未登録</span>
+                        <?php endif; ?>
+                    </span>
                     <div class="preview-container">
                         <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
-                        <?php
-                        //書類アップロード時のエラーメッセージ表示
-                        if (isset($error_message['document1'])) : ?>
+                        <?php if (isset($error_message['document1'])) : ?>
                             <div class="error-msg"><?= htmlspecialchars($error_message['document1']) ?></div>
                         <?php endif; ?>
                     </div>
@@ -331,18 +331,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?= !empty($old['back_image_name']) ? 'ファイルを更新' : 'ファイルを選択' ?>
                     </button>
                     <span id="filename2" class="filename-display"></span>
-                    <?php if (!empty($old['back_image_name'])): ?>
-                        <span id="existing-filename2">
+                    <span id="existing-filename2">
+                        <?php if (!empty($old['back_image_name'])): ?>
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
-                        </span>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <span class="unregistered">現在は未登録</span>
+                        <?php endif; ?>
+                    </span>
                     <div class="preview-container">
                         <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
-                        <?php
-                        //書類アップロード時のエラーメッセージ表示
-                        if (isset($error_message['document2'])) : ?>
+                        <?php if (isset($error_message['document2'])) : ?>
                             <div class="error-msg"><?= htmlspecialchars($error_message['document2']) ?></div>
                         <?php endif; ?>
                     </div>
