@@ -61,16 +61,26 @@ class FileBlobHelper
         $frontBlob = self::getBlobFromImage($frontFiles);
         $backBlob  = self::getBlobFromImage($backFiles);
 
-        // どちらも null の場合、アップロードなしとみなして null を返す
         if ($frontBlob === null && $backBlob === null) {
             return null;
+        }
+
+        $frontName = isset($frontFiles['name']) ? basename($frontFiles['name']) : null;
+        $backName  = isset($backFiles['name'])  ? basename($backFiles['name'])  : null;
+
+        // UTF-8 チェック
+        if ($frontName !== null && !mb_check_encoding($frontName, 'UTF-8')) {
+            $frontName = null;
+        }
+        if ($backName !== null && !mb_check_encoding($backName, 'UTF-8')) {
+            $backName = null;
         }
 
         return [
             'front' => $frontBlob,
             'back'  => $backBlob,
-            'front_image_name' => $frontFiles['name'] ?? null,
-            'back_image_name'  => $backFiles['name'] ?? null,
+            'front_image_name' => $frontName,
+            'back_image_name'  => $backName,
         ];
     }
 }
