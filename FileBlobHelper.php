@@ -69,6 +69,8 @@ class FileBlobHelper
         return [
             'front' => $frontBlob,
             'back'  => $backBlob,
+            'front_image_name' => $frontFiles['name'] ?? null,
+            'back_image_name'  => $backFiles['name'] ?? null,
         ];
     }
 }

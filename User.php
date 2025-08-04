@@ -315,27 +315,38 @@ class User
     }
 
     // ユーザドキュメント処理
-    public function saveDocument($id, $frontBlob, $backBlob, ?string $expiresAt)
-    {
-        $sql = "INSERT INTO
-                    user_documents
-                        (
-                        user_id,
-                        front_image,
-                        back_image,
-                        expires_at,
-                        created_at)
-                VALUES(
-                    :user_id,
-                    :front_image,
-                    :back_image,
-                    :expires_at,
-                    NOW()
-                    )";
+    public function saveDocument(
+        $id,
+        $frontBlob,
+        $backBlob,
+        ?string $expiresAt,
+        ?string $frontImageName,
+        ?string $backImageName
+    ) {
+        $sql = "INSERT INTO user_documents (
+                user_id,
+                front_image,
+                back_image,
+                front_image_name,
+                back_image_name,
+                expires_at,
+                created_at
+            ) VALUES (
+                :user_id,
+                :front_image,
+                :back_image,
+                :front_image_name,
+                :back_image_name,
+                :expires_at,
+                NOW()
+            )";
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindParam(':user_id', $id, PDO::PARAM_INT);
         $stmt->bindParam(':front_image', $frontBlob, PDO::PARAM_LOB);
         $stmt->bindParam(':back_image',  $backBlob,  PDO::PARAM_LOB);
+        $stmt->bindParam(':front_image_name', $frontImageName, PDO::PARAM_STR);
+        $stmt->bindParam(':back_image_name',  $backImageName,  PDO::PARAM_STR);
 
         if ($expiresAt === null) {
             $stmt->bindValue(':expires_at', null, PDO::PARAM_NULL);

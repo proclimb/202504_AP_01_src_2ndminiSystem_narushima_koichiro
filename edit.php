@@ -87,7 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $id,
                     $blobs['front'],
                     $blobs['back'],
-                    $expiresAt
+                    $expiresAt,
+                    $blobs['front_image_name'] ?? null,
+                    $blobs['back_image_name'] ?? null
                 );
             }
 
