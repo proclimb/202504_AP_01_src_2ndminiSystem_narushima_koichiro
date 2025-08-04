@@ -691,3 +691,19 @@ input.readonly-field[type="text"] {
 /* -------------------------------------------------------------------
    ↑ ここまで変更・追加箇所
    ------------------------------------------------------------------- */
+
+/* style_new.css の末尾などに追加 */
+.file-select-btn {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 13px;
+    font-weight: normal;
+    margin: 0 8px 0 0;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background: #f5f5f5;
+    color: #333;
+    box-shadow: none;
+    vertical-align: middle;
+    cursor: pointer;
+}

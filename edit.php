@@ -296,7 +296,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         name="document1"
                         id="document1"
                         accept="image/png, image/jpeg, image/jpg"
-                        onchange="handleFileChange(1)">
+                        onchange="handleFileChange(1)"
+                        style="display:none;">
+                    <button type="button" id="filelabel1-btn" class="file-select-btn" onclick="document.getElementById('document1').click();">
+                        <?= !empty($old['front_image_name']) ? 'ファイルを更新' : 'ファイルを選択' ?>
+                    </button>
                     <span id="filename1" class="filename-display"></span>
                     <?php if (!empty($old['front_image_name'])): ?>
                         <span id="existing-filename1">
@@ -321,7 +325,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         name="document2"
                         id="document2"
                         accept="image/png, image/jpeg, image/jpg"
-                        onchange="handleFileChange(2)">
+                        onchange="handleFileChange(2)"
+                        style="display:none;">
+                    <button type="button" id="filelabel2-btn" class="file-select-btn" onclick="document.getElementById('document2').click();">
+                        <?= !empty($old['back_image_name']) ? 'ファイルを更新' : 'ファイルを選択' ?>
+                    </button>
                     <span id="filename2" class="filename-display"></span>
                     <?php if (!empty($old['back_image_name'])): ?>
                         <span id="existing-filename2">
@@ -349,6 +357,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">削除</button>
     </form>
     </div>
+
+    <script>
+        function handleFileChange(num) {
+            var input = document.getElementById('document' + num);
+            var filenameSpan = document.getElementById('filename' + num);
+            var labelBtn = document.getElementById('filelabel' + num + '-btn');
+            if (input.files.length > 0) {
+                filenameSpan.textContent = input.files[0].name;
+                labelBtn.textContent = 'ファイルを選択';
+            } else {
+                filenameSpan.textContent = '';
+                // 既存ファイルがある場合は「ファイルを更新」に戻す
+                if (document.getElementById('existing-filename' + num)) {
+                    labelBtn.textContent = 'ファイルを更新';
+                } else {
+                    labelBtn.textContent = 'ファイルを選択';
+                }
+            }
+        }
+    </script>
+
 </body>
 
 </html>
