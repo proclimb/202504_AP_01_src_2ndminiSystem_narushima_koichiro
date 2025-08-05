@@ -316,7 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="削除（未実装）"
+                            <a href="#" class="delete-icon" title="登録済みデータの削除"
                                 data-filename="<?= htmlspecialchars($old['front_image_name']) ?>"
                                 data-type="front">
                                 <i class="fa-regular fa-trash-can"></i>
@@ -350,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="削除（未実装）"
+                            <a href="#" class="delete-icon" title="登録済みデータの削除"
                                 data-filename="<?= htmlspecialchars($old['back_image_name']) ?>"
                                 data-type="back">
                                 <i class="fa-regular fa-trash-can"></i>
