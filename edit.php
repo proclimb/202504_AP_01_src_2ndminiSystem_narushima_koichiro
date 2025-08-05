@@ -316,7 +316,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="削除（未実装）">
+                            <a href="#" class="delete-icon" title="削除（未実装）"
+                                data-filename="<?= htmlspecialchars($old['front_image_name']) ?>"
+                                data-type="front">
                                 <i class="fa-regular fa-trash-can"></i>
                             </a>
                         <?php else: ?>
@@ -348,7 +350,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="削除（未実装）">
+                            <a href="#" class="delete-icon" title="削除（未実装）"
+                                data-filename="<?= htmlspecialchars($old['back_image_name']) ?>"
+                                data-type="back">
                                 <i class="fa-regular fa-trash-can"></i>
                             </a>
                         <?php else: ?>
@@ -404,6 +408,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteIcons = document.querySelectorAll('.delete-icon');
+
+            deleteIcons.forEach(function(icon) {
+                icon.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    const filename = this.getAttribute('data-filename');
+                    const type = this.getAttribute('data-type');
+
+                    const confirmDelete = confirm(`${filename} を削除してよろしいですか？`);
+
+                    if (confirmDelete) {
+                        // ダミー処理：今は何もしない
+                        console.log(`削除処理を開始（${type}）: ${filename}`);
+                        // 今後ここにAjaxやフォーム送信などの処理を追加予定
+                    } else {
+                        // キャンセル：何もしない
+                        console.log(`削除をキャンセル（${type}）`);
+                    }
+                });
+            });
+        });
     </script>
 
 </body>
