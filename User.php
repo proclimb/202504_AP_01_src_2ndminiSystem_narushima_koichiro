@@ -333,7 +333,7 @@ class User
         $expiresParam = $expiresAt ?? null;
 
         if ($existing) {
-            // 2. 既存データを保持（nullで上書きしないように）
+            // 既存データを保持し、nullで上書きしないように分岐
             $fields = [];
             $params = [':user_id' => $id];
 
@@ -341,30 +341,31 @@ class User
                 $fields[] = "front_image = :front_image";
                 $params[':front_image'] = $frontBlob;
             }
-            if ($backBlob !== null) {
-                $fields[] = "back_image = :back_image";
-                $params[':back_image'] = $backBlob;
-            }
             if ($frontImageName !== null) {
                 $fields[] = "front_image_name = :front_image_name";
                 $params[':front_image_name'] = $frontImageName;
+            }
+            if ($backBlob !== null) {
+                $fields[] = "back_image = :back_image";
+                $params[':back_image'] = $backBlob;
             }
             if ($backImageName !== null) {
                 $fields[] = "back_image_name = :back_image_name";
                 $params[':back_image_name'] = $backImageName;
             }
-
-            $fields[] = "expires_at = :expires_at";
-            $params[':expires_at'] = $expiresParam;
-            $fields[] = "updated_at = NOW()";
-
+            // expires_atは両方null時以外は更新しない
+            if ($frontBlob !== null || $backBlob !== null) {
+                $fields[] = "updated_at = NOW()";
+            }
+            if (count($fields) === 0) {
+                // 何も更新しない
+                return true;
+            }
             $sql = "UPDATE user_documents SET " . implode(", ", $fields) . " WHERE user_id = :user_id";
             $stmt = $this->pdo->prepare($sql);
-
             foreach ($params as $key => $value) {
                 $stmt->bindValue($key, $value, $value === null ? PDO::PARAM_NULL : (is_resource($value) ? PDO::PARAM_LOB : PDO::PARAM_STR));
             }
-
             return $stmt->execute();
         } else {
             // 3. INSERT処理（新規追加）

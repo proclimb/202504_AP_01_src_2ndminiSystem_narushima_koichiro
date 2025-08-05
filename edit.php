@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $expiresAt = null;
                 $user->saveDocument(
                     $id,
-                    $blobs['front'],
-                    $blobs['back'],
+                    $blobs['front'] ?? null,
+                    $blobs['back'] ?? null,
                     $expiresAt,
                     $blobs['front_image_name'] ?? null,
                     $blobs['back_image_name'] ?? null
@@ -116,14 +116,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = new User($pdo);
     $old = $user->findById($id);
 
-    // ここでuser_documentsテーブルから最新のファイル名を取得
-    $stmt = $pdo->prepare("SELECT front_image_name, back_image_name FROM user_documents WHERE user_id = :user_id ORDER BY created_at DESC LIMIT 1");
+    // 表（front）の最新ファイル名
+    $stmt = $pdo->prepare("SELECT front_image_name FROM user_documents WHERE user_id = :user_id AND front_image_name IS NOT NULL ORDER BY created_at DESC LIMIT 1");
     $stmt->bindParam(':user_id', $id, PDO::PARAM_INT);
     $stmt->execute();
-    $doc = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($doc) {
-        $old['front_image_name'] = $doc['front_image_name'];
-        $old['back_image_name'] = $doc['back_image_name'];
+    $docFront = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($docFront && !empty($docFront['front_image_name'])) {
+        $old['front_image_name'] = $docFront['front_image_name'];
+    }
+
+    // 裏（back）の最新ファイル名
+    $stmt = $pdo->prepare("SELECT back_image_name FROM user_documents WHERE user_id = :user_id AND back_image_name IS NOT NULL ORDER BY created_at DESC LIMIT 1");
+    $stmt->bindParam(':user_id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $docBack = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($docBack && !empty($docBack['back_image_name'])) {
+        $old['back_image_name'] = $docBack['back_image_name'];
     }
 
     // 初期表示時にもバリデーション（エラー表示用）

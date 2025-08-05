@@ -58,29 +58,29 @@ class FileBlobHelper
      */
     public static function getMultipleBlobs(?array $frontFiles, ?array $backFiles): ?array
     {
+        $result = [];
         $frontBlob = self::getBlobFromImage($frontFiles);
         $backBlob  = self::getBlobFromImage($backFiles);
 
-        if ($frontBlob === null && $backBlob === null) {
+        if ($frontBlob !== null) {
+            $frontName = isset($frontFiles['name']) ? basename($frontFiles['name']) : null;
+            if ($frontName !== null && !mb_check_encoding($frontName, 'UTF-8')) {
+                $frontName = null;
+            }
+            $result['front'] = $frontBlob;
+            $result['front_image_name'] = $frontName;
+        }
+        if ($backBlob !== null) {
+            $backName = isset($backFiles['name']) ? basename($backFiles['name']) : null;
+            if ($backName !== null && !mb_check_encoding($backName, 'UTF-8')) {
+                $backName = null;
+            }
+            $result['back'] = $backBlob;
+            $result['back_image_name'] = $backName;
+        }
+        if (empty($result)) {
             return null;
         }
-
-        $frontName = isset($frontFiles['name']) ? basename($frontFiles['name']) : null;
-        $backName  = isset($backFiles['name'])  ? basename($backFiles['name'])  : null;
-
-        // UTF-8 チェック
-        if ($frontName !== null && !mb_check_encoding($frontName, 'UTF-8')) {
-            $frontName = null;
-        }
-        if ($backName !== null && !mb_check_encoding($backName, 'UTF-8')) {
-            $backName = null;
-        }
-
-        return [
-            'front' => $frontBlob,
-            'back'  => $backBlob,
-            'front_image_name' => $frontName,
-            'back_image_name'  => $backName,
-        ];
+        return $result;
     }
 }
