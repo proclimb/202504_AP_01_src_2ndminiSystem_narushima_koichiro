@@ -4,9 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require_once 'Db.php'; // Db.php を読み込む（PDOインスタンスが生成される）
-
-global $pdo; // Db.php で生成された $pdo を使えるようにする
+require_once 'Db.php';
+global $pdo;
 
 $data = json_decode(file_get_contents('php://input'), true);
 $user_id = $data['user_id'] ?? null;
@@ -21,10 +20,32 @@ $column_image = $type === 'front' ? 'front_image' : 'back_image';
 $column_name  = $type === 'front' ? 'front_image_name' : 'back_image_name';
 
 try {
+    // ① 該当カラムをNULLに更新
     $sql = "UPDATE user_documents SET {$column_image} = NULL, {$column_name} = NULL WHERE user_id = :user_id";
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
     $stmt->execute();
+
+    // ② 4カラムすべてがNULLかチェック
+    $checkSql = "SELECT front_image, front_image_name, back_image, back_image_name FROM user_documents WHERE user_id = :user_id";
+    $checkStmt = $pdo->prepare($checkSql);
+    $checkStmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+    $checkStmt->execute();
+    $result = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+    if (
+        $result &&
+        is_null($result['front_image']) &&
+        is_null($result['front_image_name']) &&
+        is_null($result['back_image']) &&
+        is_null($result['back_image_name'])
+    ) {
+        // ③ すべてNULLならDELETE
+        $deleteSql = "DELETE FROM user_documents WHERE user_id = :user_id";
+        $deleteStmt = $pdo->prepare($deleteSql);
+        $deleteStmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+        $deleteStmt->execute();
+    }
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
