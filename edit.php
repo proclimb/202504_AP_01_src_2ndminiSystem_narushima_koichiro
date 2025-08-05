@@ -147,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>mini System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style_new.css">
     <script src="postalcodesearch.js"></script>
     <script src="contact.js" defer></script>
@@ -315,6 +316,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
+                            <a href="#" class="delete-icon" title="削除（未実装）">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
                         <?php else: ?>
                             <span class="unregistered">現在は未登録</span>
                         <?php endif; ?>
@@ -343,6 +347,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php if (!empty($old['back_image_name'])): ?>
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
+                            </a>
+                            <a href="#" class="delete-icon" title="削除（未実装）">
+                                <i class="fa-solid fa-trash-can"></i>
                             </a>
                         <?php else: ?>
                             <span class="unregistered">現在は未登録</span>
