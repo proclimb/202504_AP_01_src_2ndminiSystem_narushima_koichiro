@@ -371,12 +371,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             var input = document.getElementById('document' + num);
             var filenameSpan = document.getElementById('filename' + num);
             var labelBtn = document.getElementById('filelabel' + num + '-btn');
+            var previewImg = document.getElementById('preview' + num);
+
             if (input.files.length > 0) {
-                filenameSpan.textContent = input.files[0].name;
+                var file = input.files[0];
+                filenameSpan.textContent = file.name;
                 labelBtn.textContent = 'ファイルを選択';
+
+                // プレビュー画像表示処理を追加
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
             } else {
                 filenameSpan.textContent = '';
-                // 既存ファイルがある場合は「ファイルを更新」に戻す
+                previewImg.src = '#';
+                previewImg.style.display = 'none';
+
                 if (document.getElementById('existing-filename' + num)) {
                     labelBtn.textContent = 'ファイルを更新';
                 } else {
