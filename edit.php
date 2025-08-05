@@ -410,24 +410,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const deleteIcons = document.querySelectorAll('.delete-icon');
-
-            deleteIcons.forEach(function(icon) {
+            document.querySelectorAll('.delete-icon').forEach(function(icon) {
                 icon.addEventListener('click', function(e) {
                     e.preventDefault();
 
                     const filename = this.getAttribute('data-filename');
                     const type = this.getAttribute('data-type');
+                    const userId = <?= json_encode($old['id']) ?>;
 
-                    const confirmDelete = confirm(`${filename} を削除してよろしいですか？`);
+                    if (confirm(`${filename} を削除してよろしいですか？`)) {
+                        fetch('DeleteDocument.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    user_id: userId,
+                                    type: type
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('削除が完了しました。');
 
-                    if (confirmDelete) {
-                        // ダミー処理：今は何もしない
-                        console.log(`削除処理を開始（${type}）: ${filename}`);
-                        // 今後ここにAjaxやフォーム送信などの処理を追加予定
-                    } else {
-                        // キャンセル：何もしない
-                        console.log(`削除をキャンセル（${type}）`);
+                                    const container = this.closest('#existing-filename1, #existing-filename2');
+                                    if (container) {
+                                        container.innerHTML = '<span class="unregistered">現在は未登録</span>';
+
+                                        // 🔄 ファイル選択ボタンのリセット
+                                        const fileInputId = (type === 'front') ? 'document1' : 'document2';
+                                        const fileButtonId = (type === 'front') ? 'filelabel1-btn' : 'filelabel2-btn';
+
+                                        const fileInput = document.getElementById(fileInputId);
+                                        const fileButton = document.getElementById(fileButtonId);
+
+                                        if (fileInput) fileInput.value = '';
+                                        if (fileButton) fileButton.textContent = 'ファイルを選択';
+
+                                        // 🔄 プレビュー画像も非表示にする（任意）
+                                        const previewId = (type === 'front') ? 'preview1' : 'preview2';
+                                        const previewImg = document.getElementById(previewId);
+                                        if (previewImg) {
+                                            previewImg.src = '#';
+                                            previewImg.style.display = 'none';
+                                        }
+
+                                        // 🔄 ファイル名表示もクリア（任意）
+                                        const filenameSpanId = (type === 'front') ? 'filename1' : 'filename2';
+                                        const filenameSpan = document.getElementById(filenameSpanId);
+                                        if (filenameSpan) filenameSpan.textContent = '';
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('削除エラー:', error);
+                                alert('通信エラーが発生しました。');
+                            });
                     }
                 });
             });
