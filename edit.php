@@ -317,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
                             <a href="#" class="delete-icon" title="削除（未実装）">
-                                <i class="fa-solid fa-trash-can"></i>
+                                <i class="fa-regular fa-trash-can"></i>
                             </a>
                         <?php else: ?>
                             <span class="unregistered">現在は未登録</span>
@@ -349,7 +349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
                             <a href="#" class="delete-icon" title="削除（未実装）">
-                                <i class="fa-solid fa-trash-can"></i>
+                                <i class="fa-regular fa-trash-can"></i>
                             </a>
                         <?php else: ?>
                             <span class="unregistered">現在は未登録</span>
