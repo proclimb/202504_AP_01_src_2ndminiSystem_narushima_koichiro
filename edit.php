@@ -81,7 +81,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_FILES['document2'] ?? null
             );
 
-            if ($blobs !== null) {
+            $deleteFront = isset($_POST['delete_front']) && $_POST['delete_front'] === '1';
+            $deleteBack  = isset($_POST['delete_back'])  && $_POST['delete_back']  === '1';
+
+            // 書類削除フラグが立っている場合は該当カラムをNULLでUPDATE
+            if ($deleteFront || $deleteBack) {
+                $fields = [];
+                $params = [':user_id' => $id];
+                if ($deleteFront) {
+                    $fields[] = 'front_image = NULL';
+                    $fields[] = 'front_image_name = NULL';
+                }
+                if ($deleteBack) {
+                    $fields[] = 'back_image = NULL';
+                    $fields[] = 'back_image_name = NULL';
+                }
+                if (!empty($fields)) {
+                    $sql = 'UPDATE user_documents SET ' . implode(', ', $fields) . ' WHERE user_id = :user_id';
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->bindValue(':user_id', $id, PDO::PARAM_INT);
+                    $stmt->execute();
+                }
+                // 4カラム全てNULLならレコード自体をDELETE
+                $checkSql = 'SELECT front_image, front_image_name, back_image, back_image_name FROM user_documents WHERE user_id = :user_id';
+                $checkStmt = $pdo->prepare($checkSql);
+                $checkStmt->bindValue(':user_id', $id, PDO::PARAM_INT);
+                $checkStmt->execute();
+                $result = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                if ($result && is_null($result['front_image']) && is_null($result['front_image_name']) && is_null($result['back_image']) && is_null($result['back_image_name'])) {
+                    $deleteSql = 'DELETE FROM user_documents WHERE user_id = :user_id';
+                    $deleteStmt = $pdo->prepare($deleteSql);
+                    $deleteStmt->bindValue(':user_id', $id, PDO::PARAM_INT);
+                    $deleteStmt->execute();
+                }
+            } else if ($blobs !== null) {
                 $expiresAt = null;
                 $user->saveDocument(
                     $id,
@@ -162,6 +195,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <div>
         <form method="post" name="edit" enctype="multipart/form-data" onsubmit="return validate();">
+            <input type="hidden" name="delete_front" id="delete_front" value="0">
+            <input type="hidden" name="delete_back" id="delete_back" value="0">
             <input type="hidden" name="id" value="<?= htmlspecialchars($old['id'] ?? '') ?>">
             <h1 class="contact-title">更新内容入力</h1>
             <p>更新内容をご入力の上、「更新」ボタンをクリックしてください。</p>
@@ -316,7 +351,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank" id="existing-name1">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="登録済みデータの削除"
+                            <a href="#" class="delete-icon" id="delete-icon-front" title="登録済みデータの削除"
                                 data-filename="<?= htmlspecialchars($old['front_image_name']) ?>"
                                 data-type="front">
                                 <i class="fa-regular fa-trash-can"></i>
@@ -350,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank" id="existing-name2">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
-                            <a href="#" class="delete-icon" title="登録済みデータの削除"
+                            <a href="#" class="delete-icon" id="delete-icon-back" title="登録済みデータの削除"
                                 data-filename="<?= htmlspecialchars($old['back_image_name']) ?>"
                                 data-type="back">
                                 <i class="fa-regular fa-trash-can"></i>
@@ -410,65 +445,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // 既存のファイルを削除する際の確認ボックス
+        // ゴミ箱アイコンのクリックで削除フラグを切り替え、見た目を変更
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.delete-icon').forEach(function(icon) {
                 icon.addEventListener('click', function(e) {
                     e.preventDefault();
-
-                    const filename = this.getAttribute('data-filename');
                     const type = this.getAttribute('data-type');
-                    const userId = <?= json_encode($old['id']) ?>;
+                    const isFront = type === 'front';
+                    const flagId = isFront ? 'delete_front' : 'delete_back';
+                    const filenameId = isFront ? 'existing-name1' : 'existing-name2';
+                    const iconElem = this.querySelector('i');
+                    const filenameElem = document.getElementById(filenameId);
+                    const flagInput = document.getElementById(flagId);
 
-                    if (confirm(`${filename} を削除してよろしいですか？`)) {
-                        fetch('DeleteDocument.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    user_id: userId,
-                                    type: type
-                                })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    alert('削除が完了しました。');
-
-                                    const container = this.closest('#existing-filename1, #existing-filename2');
-                                    if (container) {
-                                        container.innerHTML = '<span class="unregistered">現在は未登録</span>';
-
-                                        // 🔄 ファイル選択ボタンのリセット
-                                        const fileInputId = (type === 'front') ? 'document1' : 'document2';
-                                        const fileButtonId = (type === 'front') ? 'filelabel1-btn' : 'filelabel2-btn';
-
-                                        const fileInput = document.getElementById(fileInputId);
-                                        const fileButton = document.getElementById(fileButtonId);
-
-                                        if (fileInput) fileInput.value = '';
-                                        if (fileButton) fileButton.textContent = 'ファイルを選択';
-
-                                        // 🔄 プレビュー画像も非表示にする（任意）
-                                        const previewId = (type === 'front') ? 'preview1' : 'preview2';
-                                        const previewImg = document.getElementById(previewId);
-                                        if (previewImg) {
-                                            previewImg.src = '#';
-                                            previewImg.style.display = 'none';
-                                        }
-
-                                        // 🔄 ファイル名表示もクリア（任意）
-                                        const filenameSpanId = (type === 'front') ? 'filename1' : 'filename2';
-                                        const filenameSpan = document.getElementById(filenameSpanId);
-                                        if (filenameSpan) filenameSpan.textContent = '';
-                                    }
-                                }
-                            })
-                            .catch(error => {
-                                console.error('削除エラー:', error);
-                                alert('通信エラーが発生しました。');
-                            });
+                    // フラグ切り替え
+                    if (flagInput.value === '0') {
+                        flagInput.value = '1';
+                        // 打消し線・色変更
+                        if (filenameElem) {
+                            filenameElem.style.textDecoration = 'line-through';
+                            filenameElem.style.color = '#888';
+                        }
+                        if (iconElem) {
+                            iconElem.style.color = 'red';
+                        }
+                    } else {
+                        flagInput.value = '0';
+                        // 元に戻す
+                        if (filenameElem) {
+                            filenameElem.style.textDecoration = '';
+                            filenameElem.style.color = '';
+                        }
+                        if (iconElem) {
+                            iconElem.style.color = '';
+                        }
                     }
                 });
             });
