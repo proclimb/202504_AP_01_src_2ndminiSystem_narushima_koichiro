@@ -313,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span id="filename1" class="filename-display"></span>
                     <span id="existing-filename1">
                         <?php if (!empty($old['front_image_name'])): ?>
-                            <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank">
+                            <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=front" target="_blank" id="existing-name1">
                                 <?= htmlspecialchars($old['front_image_name']) ?>
                             </a>
                             <a href="#" class="delete-icon" title="登録済みデータの削除"
@@ -347,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span id="filename2" class="filename-display"></span>
                     <span id="existing-filename2">
                         <?php if (!empty($old['back_image_name'])): ?>
-                            <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank">
+                            <a href="Showdocument.php?user_id=<?= urlencode($old['id']) ?>&type=back" target="_blank" id="existing-name2">
                                 <?= htmlspecialchars($old['back_image_name']) ?>
                             </a>
                             <a href="#" class="delete-icon" title="登録済みデータの削除"
@@ -378,6 +378,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <script>
+        // 新規画像アップロード時にプレビュー画像を表示するための関数
         function handleFileChange(num) {
             var input = document.getElementById('document' + num);
             var filenameSpan = document.getElementById('filename' + num);
@@ -409,6 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // 既存のファイルを削除する際の確認ボックス
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.delete-icon').forEach(function(icon) {
                 icon.addEventListener('click', function(e) {
@@ -471,6 +473,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
+
+        // 新規ファイルアップロード時に旧ファイル名に打消し線を追加する関数
+        function handleFileChange(num) {
+            const input = document.getElementById('document' + num);
+            const filenameSpan = document.getElementById('filename' + num);
+            const labelBtn = document.getElementById('filelabel' + num + '-btn');
+            const previewImg = document.getElementById('preview' + num);
+            const existingName = document.getElementById('existing-name' + num);
+            const deleteIcon = document.querySelector('#existing-filename' + num + ' .delete-icon');
+
+            const file = input.files[0];
+            if (!file) return;
+
+            // 🔄 プレビュー画像表示
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // 🔄 ファイル名表示
+            filenameSpan.textContent = file.name;
+
+            // 🔄 ボタン表示変更
+            labelBtn.textContent = 'ファイルを選択';
+
+            // 🔄 既存ファイル名に打消し線
+            if (existingName) {
+                existingName.style.textDecoration = 'line-through';
+                existingName.style.color = '#888';
+            }
+
+            // 🔄 ゴミ箱アイコンを非表示
+            if (deleteIcon) {
+                deleteIcon.style.display = 'none';
+            }
+
+            // 🔄 既存の新ファイル名表示があれば削除（念のため）
+            const oldNewName = document.getElementById('new-name' + num);
+            if (oldNewName) {
+                oldNewName.remove();
+            }
+        }
     </script>
 
 </body>
