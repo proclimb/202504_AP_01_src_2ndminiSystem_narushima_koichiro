@@ -69,7 +69,11 @@ window.addEventListener("DOMContentLoaded", function () {
         form.elements["birth_day"].addEventListener("change", validateBirthDate);
     }
     if (form.elements["postal_code"]) {
-        form.elements["postal_code"].addEventListener("input", validatePostalCode);
+        form.elements["postal_code"].addEventListener("input", function (event) {
+            // 全角ハイフンなどを半角ハイフンに変換
+            event.target.value = event.target.value.replace(/[－‐―‐―]/g, "-");
+            validatePostalCode();
+        });
     }
     if (form.elements["prefecture"]) {
         form.elements["prefecture"].addEventListener("input", validateAddress);
@@ -81,7 +85,11 @@ window.addEventListener("DOMContentLoaded", function () {
         form.elements["building"].addEventListener("input", validateAddress);
     }
     if (form.elements["tel"]) {
-        form.elements["tel"].addEventListener("input", validateTelField);
+        form.elements["tel"].addEventListener("input", function (event) {
+            // 全角ハイフンなどを半角ハイフンに変換
+            event.target.value = event.target.value.replace(/[－‐―‐―]/g, "-");
+            validateTelField();
+        });
     }
     if (form.elements["email"]) {
         form.elements["email"].addEventListener("input", validateEmailField);
