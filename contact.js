@@ -45,6 +45,14 @@ window.addEventListener("DOMContentLoaded", function () {
     const form = document.forms["edit"];
     if (!form) return;
 
+    // すべてのテキスト入力にblur時のtrim処理を追加
+    const textInputs = form.querySelectorAll('input[type="text"]');
+    textInputs.forEach(function (input) {
+        input.addEventListener("blur", function () {
+            input.value = input.value.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
+        });
+    });
+
     if (form.elements["name"]) {
         form.elements["name"].addEventListener("input", validateName);
     }
