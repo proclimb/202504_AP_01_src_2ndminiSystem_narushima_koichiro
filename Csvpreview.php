@@ -1,51 +1,93 @@
 <?php
 // Csvpreview.php
 // ──────────────────────────────────────────
-// 「日本郵便 住所の郵便番号 (UTF-8)」CSV の
-// 生データおよびパース結果をプレビューし、
-// OK ボタンでインポート画面(Csvimport.php)に飛ばします。
+// 日本郵便「住所の郵便番号 (UTF-8)」CSV の
+// 最初の10行だけをプレビューする
 // ──────────────────────────────────────────
 
 require_once 'Db.php'; // ※Db.php で PDO 接続 ($pdo) を行っている前提
 
 // CSV ファイルのパス（環境に合わせて変更）
-$csvDir  = __DIR__ . '/csv';
-$csvFile = $csvDir . '/update.csv';  // 例：utf_ken_all.csv を update.csv にリネームして置く
+$csvDir = __DIR__ . '/csv';
+$csvFile = $csvDir . '/update.csv';
 
 // 1) ファイル存在チェック
 if (! file_exists($csvFile)) {
-    echo "<p style='color:red;'>CSV ファイルが見つかりません: {$csvFile}</p>";
-    echo '<p><a href="index.php">TOPに戻る</a></p>';
+    // 修正箇所: CSVファイルが見つからない場合、HTML全体を表示
+?>
+    <!DOCTYPE html>
+    <html lang="ja">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>CSV プレビュー</title>
+        <link rel="stylesheet" href="style_new.css">
+    </head>
+
+    <body>
+        <div>
+            <h1>mini System</h1>
+        </div>
+        <div>
+            <h2>CSV プレビュー</h2>
+        </div>
+        <div>
+            <form>
+                <h1 class="contact-title">CSVファイルが見つかりません</h1>
+                <div style="text-align: center; margin-top: 50px;">
+                    <p style="color:red; font-size: 1.2em;"><?= htmlspecialchars($csvFile, ENT_QUOTES) ?></p>
+                    <a href="index.php">
+                        <button type="button">TOPに戻る</button>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </body>
+
+    </html>
+<?php
     exit;
 }
 
-// 2) file_get_contents() で「生の CSV 文字列」を取得
-$rawCsv = file_get_contents($csvFile);
-if ($rawCsv === false) {
-    echo "<p style='color:red;'>CSV ファイルを読み込めませんでした。</p>";
-    echo '<p><a href="index.php">TOPに戻る</a></p>';
-    exit;
-}
-
-// 3) fopen/fgetcsv/fclose でパースした結果を配列に格納
+// 2) fopen/fgetcsv/fclose でパースした結果を配列に格納
+//  ※ 全行ではなく、最初の10行のみを読み込む
 $dataRows = [];
+$previewLimit = 10;
+$rowCount = 0;
+
 if (($handle = fopen($csvFile, 'r')) !== false) {
-    // パース結果を全行取得
-    while (($row = fgetcsv($handle)) !== false) {
-        // $row の中身（例）
-        //   [0] => '01101'
-        //   [1] => '060'
-        //   [2] => '0600000'
-        //   [3] => '北海道'
-        //   [4] => '札幌市中央区'
-        //   [5] => '以下に掲載がない場合'
-        //   … それ以降に番地やフリガナ等がある場合もあり
+    while (($row = fgetcsv($handle)) !== false && $rowCount < $previewLimit) {
         $dataRows[] = $row;
+        $rowCount++;
     }
     fclose($handle);
 } else {
-    echo "<p style='color:red;'>CSV をオープンできませんでした。</p>";
-    echo '<p><a href="index.php">TOPに戻る</a></p>';
+    // 修正箇所: CSVをオープンできない場合もHTML全体を表示
+?>
+    <!DOCTYPE html>
+    <html lang="ja">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>CSV プレビュー</title>
+        <link rel="stylesheet" href="style_new.css">
+    </head>
+
+    <body>
+        <div>
+            <h1>mini System</h1>
+        </div>
+        <div>
+            <h2>CSV プレビュー</h2>
+        </div>
+        <div style="text-align: center; margin-top: 50px;">
+            <p style="color:red; font-size: 1.2em;">CSV をオープンできませんでした。</p>
+            <a href="index.php" class="csv-btn-cancel" style="margin-top: 20px;">TOPに戻る</a>
+        </div>
+    </body>
+
+    </html>
+<?php
     exit;
 }
 ?>
@@ -55,7 +97,6 @@ if (($handle = fopen($csvFile, 'r')) !== false) {
 <head>
     <meta charset="UTF-8">
     <title>CSV プレビュー</title>
-    <!-- ここで style_new.css を読み込む -->
     <link rel="stylesheet" href="style_new.css">
 </head>
 
@@ -66,15 +107,10 @@ if (($handle = fopen($csvFile, 'r')) !== false) {
     <div>
         <h2>CSV プレビュー</h2>
     </div>
-    <!-- ① 生の CSV 文字列 -->
-    <h2>① 生の CSV（file_get_contents）</h2>
-    <pre class="comon-pre"><?= htmlspecialchars($rawCsv, ENT_QUOTES) ?></pre>
 
-    <!-- ② パース結果（必要カラムのみ抽出して一覧表示） -->
-    <h2>② CSV パース結果</h2>
+    <h2>CSV パース結果 (最初の10行)</h2>
     <table class="common-table">
         <tr>
-            <!-- 見出し：郵便番号・都道府県・市区町村・町域 -->
             <th>郵便番号 (7桁)</th>
             <th>都道府県 (漢字)</th>
             <th>市区町村 (漢字)</th>
@@ -82,8 +118,7 @@ if (($handle = fopen($csvFile, 'r')) !== false) {
         </tr>
         <?php foreach ($dataRows as $row): ?>
             <?php
-            // “日本郵便 住所の郵便番号 CSV” の場合、漢字情報はインデックス 6,7,8
-            // count($row) が最低でも 9 以上かチェック
+            // 日本郵便 CSVのインデックス6,7,8をチェック
             if (count($row) < 9) {
                 continue;
             }
@@ -101,8 +136,7 @@ if (($handle = fopen($csvFile, 'r')) !== false) {
         <?php endforeach; ?>
     </table>
 
-    <!-- ③ OK ボタンを押すと Csvimport.php へ（インポート実行） -->
-    <a href="Csvimport.php" class="csv-btn">OK</a>
+    <a href="Csvimport.php" class="csv-btn">インポート開始</a>
     <a href="index.php" class="csv-btn-cancel">キャンセル</a>
 </body>
 

@@ -9,7 +9,7 @@
 require_once 'Db.php'; // ※Db.php で PDO 接続 ($pdo) を行っている前提
 
 // 1) CSV ファイルのパス
-$csvDir  = __DIR__ . '/csv';
+$csvDir = __DIR__ . '/csv';
 $csvFile = $csvDir . '/update.csv';
 
 if (! file_exists($csvFile)) {
@@ -18,29 +18,14 @@ if (! file_exists($csvFile)) {
     exit;
 }
 
-// 2) fopen/fgetcsv/fclose で CSV をパースして全行を配列に格納
-$rows = [];
-if (($handle = fopen($csvFile, 'r')) !== false) {
-    while (($data = fgetcsv($handle)) !== false) {
-        // $data は配列。最低でも 6 カラム以上あることを想定
-        $rows[] = $data;
-    }
-    fclose($handle);
-} else {
-    echo "<p style='color:red;'>CSV を開けませんでした。</p>";
-    echo '<p><a href="index.php">トップに戻る</a></p>';
-    exit;
-}
-
-// 3) DB トランザクション開始
+// 2) DB トランザクション開始
 try {
     $pdo->beginTransaction();
 
-    // 3-1) address_master を物理削除（全件削除）
-    //      AUTO_INCREMENT もリセットしたい場合は TRUNCATE
+    // 2-1) address_master を物理削除（全件削除）
     $pdo->exec("TRUNCATE TABLE address_master");
 
-    // 3-2) INSERT 用プリペアドステートメントを準備
+    // 2-2) INSERT 用プリペアドステートメントを準備
     $insertSql = "
         INSERT INTO address_master
             (postal_code, prefecture, city, town, updated_at)
@@ -49,31 +34,43 @@ try {
     ";
     $stmt = $pdo->prepare($insertSql);
 
-    // 3-3) CSV の各行をループしてバインド＆実行
-    foreach ($rows as $row) {
-        // カラム数チェック
-        if (count($row) < 6) {
-            continue;
-        }
-        // カラム２～５を取得（例: $row[2]='0600000', $row[3]='北海道', $row[4]='札幌市中央区', $row[5]='…'）
-        $postal   = trim($row[2]);
-        $pref     = trim($row[6]);
-        $city     = trim($row[7]);
-        $town     = trim($row[8]);
+    // 2-3) CSVファイルをオープンし、1行ずつ読み込んで処理する
+    $rowCount = 0; // 処理件数カウント用
+    if (($handle = fopen($csvFile, 'r')) !== false) {
 
-        // 郵便番号が7桁でない行はスキップ
-        if ($postal === '' || mb_strlen($postal) !== 7) {
-            continue;
+        while (($row = fgetcsv($handle)) !== false) {
+            // カラム数チェック
+            if (count($row) < 9) {
+                continue;
+            }
+
+            // 必要なカラムを取得
+            $postal  = trim($row[2]);
+            $pref    = trim($row[6]);
+            $city    = trim($row[7]);
+            $town    = trim($row[8]);
+
+            // 郵便番号が7桁でない行はスキップ
+            if ($postal === '' || mb_strlen($postal) !== 7) {
+                continue;
+            }
+
+            // データをバインドして実行
+            $stmt->bindValue(':postal_code', $postal, PDO::PARAM_STR);
+            $stmt->bindValue(':prefecture',   $pref,   PDO::PARAM_STR);
+            $stmt->bindValue(':city',         $city,   PDO::PARAM_STR);
+            $stmt->bindValue(':town',         $town,   PDO::PARAM_STR);
+            $stmt->execute();
+
+            $rowCount++;
         }
 
-        $stmt->bindValue(':postal_code', $postal, PDO::PARAM_STR);
-        $stmt->bindValue(':prefecture',   $pref,   PDO::PARAM_STR);
-        $stmt->bindValue(':city',         $city,   PDO::PARAM_STR);
-        $stmt->bindValue(':town',         $town,   PDO::PARAM_STR);
-        $stmt->execute();
+        fclose($handle);
+    } else {
+        throw new Exception("CSVファイルをオープンできませんでした。");
     }
 
-    // 3-4) コミット
+    // 2-4) コミット
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();
@@ -89,7 +86,6 @@ if (file_exists($csvFile)) {
     if (! unlink($csvFile)) {
         // 削除に失敗した場合はログを残すか、画面に出力
         error_log("Failed to delete CSV file: {$csvFile}");
-        // 必要ならユーザーに通知する
         echo "<p style='color:red;'>ファイルの削除に失敗しました。</p>";
     }
 }
@@ -114,7 +110,7 @@ if (file_exists($csvFile)) {
         <div>
             <h1>CSV取込完了</h1>
             <p>
-                住所マスタを更新しました。
+                住所マスタを更新しました。（処理件数：<?= $rowCount ?>件）
             </p>
             <a href="index.php">
                 <button type="button">TOPに戻る</button>
