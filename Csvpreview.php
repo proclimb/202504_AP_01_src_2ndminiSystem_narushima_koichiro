@@ -34,6 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csvUpload'])) {
     }
 }
 
+// キャンセル処理
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel'])) {
+    if (file_exists($csvFile)) {
+        unlink($csvFile); // CSVファイルを削除
+    }
+    // 再読み込み（ファイルがない状態になるのでアップロード画面が表示される）
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 // 1) ファイル存在チェック
 if (! file_exists($csvFile)) {
     // 修正箇所: CSVファイルが見つからない場合、HTML全体を表示
@@ -166,8 +176,16 @@ if (($handle = fopen($csvFile, 'r')) !== false) {
         <?php endforeach; ?>
     </table>
 
-    <a href="Csvimport.php" class="csv-btn">インポート開始</a>
-    <a href="index.php" class="csv-btn-cancel">キャンセル</a>
+    <div class="button-container">
+        <form method="GET" action="Csvimport.php">
+            <button type="submit" class="csv-btn">インポート開始</button>
+        </form>
+
+        <form method="POST" action="">
+            <button type="submit" name="cancel" value="1" class="csv-btn-cancel">キャンセル</button>
+        </form>
+    </div>
+
 
     <script>
         document.getElementById('csvUpload').addEventListener('change', function() {
