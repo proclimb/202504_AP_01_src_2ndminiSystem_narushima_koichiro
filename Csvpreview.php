@@ -14,19 +14,25 @@ $csvFile = $csvDir . '/update.csv';
 
 // アップロード処理
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csvUpload'])) {
-    $uploadTmp = $_FILES['csvUpload']['tmp_name'];
+    $uploadTmp  = $_FILES['csvUpload']['tmp_name'];
     $uploadName = $_FILES['csvUpload']['name'];
 
-    // 拡張子チェック（.csvのみ許可）
-    if (pathinfo($uploadName, PATHINFO_EXTENSION) !== 'csv') {
+    // ファイル名と拡張子のチェック
+    $expectedName = 'update.csv';
+    $actualName   = basename($uploadName);
+
+    if ($actualName !== $expectedName) {
+        echo "<script>alert('ファイル名は「update.csv」である必要があります');</script>";
+    } elseif (pathinfo($actualName, PATHINFO_EXTENSION) !== 'csv') {
         echo "<script>alert('CSVファイルのみアップロード可能です');</script>";
     } elseif (is_uploaded_file($uploadTmp)) {
-        // ファイルを保存
+        // 保存処理
         if (!is_dir($csvDir)) {
-            mkdir($csvDir, 0777, true); // ディレクトリがなければ作成
+            mkdir($csvDir, 0777, true);
         }
         move_uploaded_file($uploadTmp, $csvFile);
-        // 成功したらリロード（再読み込みしてプレビュー表示）
+
+        // 成功したらリロード
         header("Location: " . $_SERVER['PHP_SELF']);
         exit;
     } else {
@@ -71,6 +77,7 @@ if (! file_exists($csvFile)) {
 
                 <div style="margin-top: 20px;">
                     <p>update.csvをアップロードして「更新」ボタンをクリックしてください。</p>
+                    <p style="color: red;">※ファイル名は必ず「update.csv」にしてください。</p>
                     <label for="csvUpload">ファイル選択</label>
                     <input type="file" id="csvUpload" name="csvUpload" accept=".csv">
                     <span id="fileName" style="margin-left: 10px; font-weight: bold;"></span>
