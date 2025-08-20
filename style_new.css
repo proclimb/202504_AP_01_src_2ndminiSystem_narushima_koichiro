@@ -719,3 +719,34 @@ input.readonly-field[type="text"] {
 .delete-icon:hover {
     opacity: 0.7;
 }
+
+/* ボタンを中央寄せするためのスタイル */
+/* ここから下は Csvpreview.php 用のスタイル */
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    /* 中央寄せ */
+    gap: 20px;
+    /* ボタン間のスペース */
+    margin-top: 30px;
+}
+
+/* .csv-btn,
+.csv-btn-cancel {
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+} */
+
+.csv-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.csv-btn-cancel {
+    background-color: #dc3545;
+    color: white;
+}
