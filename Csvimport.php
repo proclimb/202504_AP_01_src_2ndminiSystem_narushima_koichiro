@@ -1,31 +1,59 @@
 <?php
 // Csvimport.php
 // ──────────────────────────────────────────
-// プレビューを経て OK が押された場合に呼び出される。
 // 日本郵便「住所の郵便番号 (UTF-8)」CSV を
-// address_master テーブルに丸ごと取り込む。
+// address_master テーブルに分割処理を経て取り込む。
 // ──────────────────────────────────────────
 
-require_once 'Db.php'; // ※Db.php で PDO 接続 ($pdo) を行っている前提
+require_once 'Db.php'; // PDO接続 ($pdo) を行うファイル
 
-// 1) CSV ファイルのパス
-$csvDir = __DIR__ . '/csv';
-$csvFile = $csvDir . '/update.csv';
+// CSVファイルと一時フォルダのパス設定
+$csvDir   = __DIR__ . '/csv';
+$csvFile  = $csvDir . '/update.csv';
+$tempDir  = $csvDir . '/chunks';
+$chunkSize = 5000; // 1ファイルあたりの行数
 
-if (! file_exists($csvFile)) {
+// ファイル存在チェック
+if (!file_exists($csvFile)) {
     echo "<p style='color:red;'>CSV ファイルが見つかりません: {$csvFile}</p>";
     echo '<p><a href="index.php">トップに戻る</a></p>';
     exit;
 }
 
-// 2) DB トランザクション開始
+// 一時フォルダが存在しない場合は作成
+if (!is_dir($tempDir)) {
+    mkdir($tempDir, 0777, true);
+}
+
+// CSVファイルを分割処理
+$handle = fopen($csvFile, 'r');
+$fileIndex = 1;
+$rowCount = 0;
+$outHandle = fopen("{$tempDir}/chunk_{$fileIndex}.csv", 'w');
+
+while (($row = fgetcsv($handle)) !== false) {
+    fputcsv($outHandle, $row);
+    $rowCount++;
+
+    // chunkSizeに達したら新しいファイルを作成
+    if ($rowCount >= $chunkSize) {
+        fclose($outHandle);
+        $fileIndex++;
+        $rowCount = 0;
+        $outHandle = fopen("{$tempDir}/chunk_{$fileIndex}.csv", 'w');
+    }
+}
+fclose($handle);
+fclose($outHandle);
+
+// データベースへの取り込み処理開始
 try {
     $pdo->beginTransaction();
 
-    // 2-1) address_master を物理削除（全件削除）
+    // address_master テーブルを初期化（全件削除）
     $pdo->exec("TRUNCATE TABLE address_master");
 
-    // 2-2) INSERT 用プリペアドステートメントを準備
+    // INSERT用のプリペアドステートメントを準備
     $insertSql = "
         INSERT INTO address_master
             (postal_code, prefecture, city, town, updated_at)
@@ -34,26 +62,25 @@ try {
     ";
     $stmt = $pdo->prepare($insertSql);
 
-    // 2-3) CSVファイルをオープンし、1行ずつ読み込んで処理する
-    $rowCount = 0; // 処理件数カウント用
-    if (($handle = fopen($csvFile, 'r')) !== false) {
+    $totalCount = 0; // 全体の処理件数
+
+    // 分割されたCSVファイルを順次処理
+    $chunkFiles = glob("{$tempDir}/chunk_*.csv");
+    foreach ($chunkFiles as $chunkFile) {
+        $handle = fopen($chunkFile, 'r');
 
         while (($row = fgetcsv($handle)) !== false) {
-            // カラム数チェック
-            if (count($row) < 9) {
-                continue;
-            }
+            // カラム数チェック（最低限9列必要）
+            if (count($row) < 9) continue;
 
             // 必要なカラムを取得
-            $postal  = trim($row[2]);
-            $pref    = trim($row[6]);
-            $city    = trim($row[7]);
-            $town    = trim($row[8]);
+            $postal = trim($row[2]);
+            $pref   = trim($row[6]);
+            $city   = trim($row[7]);
+            $town   = trim($row[8]);
 
-            // 郵便番号が7桁でない行はスキップ
-            if ($postal === '' || mb_strlen($postal) !== 7) {
-                continue;
-            }
+            // 郵便番号が7桁でない場合はスキップ
+            if ($postal === '' || mb_strlen($postal) !== 7) continue;
 
             // データをバインドして実行
             $stmt->bindValue(':postal_code', $postal, PDO::PARAM_STR);
@@ -62,17 +89,16 @@ try {
             $stmt->bindValue(':town',         $town,   PDO::PARAM_STR);
             $stmt->execute();
 
-            $rowCount++;
+            $totalCount++;
         }
 
         fclose($handle);
-    } else {
-        throw new Exception("CSVファイルをオープンできませんでした。");
     }
 
-    // 2-4) コミット
+    // コミット
     $pdo->commit();
 } catch (Exception $e) {
+    // エラー発生時はロールバック
     $pdo->rollBack();
     echo "<p style='color:red;'>CSV 取込中にエラーが発生しました: "
         . htmlspecialchars($e->getMessage(), ENT_QUOTES)
@@ -81,15 +107,20 @@ try {
     exit;
 }
 
-// CSVファイルの削除処理
+// 一時ファイルと元CSVの削除処理
+foreach ($chunkFiles as $file) {
+    unlink($file);
+}
+rmdir($tempDir);
+
 if (file_exists($csvFile)) {
-    if (! unlink($csvFile)) {
-        // 削除に失敗した場合はログを残すか、画面に出力
+    if (!unlink($csvFile)) {
         error_log("Failed to delete CSV file: {$csvFile}");
-        echo "<p style='color:red;'>ファイルの削除に失敗しました。</p>";
+        echo "<p style='color:red;'>CSVファイルの削除に失敗しました。</p>";
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -107,15 +138,11 @@ if (file_exists($csvFile)) {
         <h2>CSV取込完了</h2>
     </div>
     <div>
-        <div>
-            <h1>CSV取込完了</h1>
-            <p>
-                住所マスタを更新しました。（処理件数：<?= $rowCount ?>件）
-            </p>
-            <a href="index.php">
-                <button type="button">TOPに戻る</button>
-            </a>
-        </div>
+        <h1>CSV取込完了</h1>
+        <p>住所マスタを更新しました。（処理件数：<?= $totalCount ?>件）</p>
+        <a href="index.php">
+            <button type="button">TOPに戻る</button>
+        </a>
     </div>
 </body>
 
