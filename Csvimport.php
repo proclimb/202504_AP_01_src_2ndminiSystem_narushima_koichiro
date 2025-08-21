@@ -112,6 +112,8 @@ try {
                 <li><?= htmlspecialchars($err, ENT_QUOTES) ?></li>
             <?php endforeach; ?>
         </ul>
+    <?php else: ?>
+        <p style="color: green; font-weight: bold;">CSVデータのアップロードが完了しました。</p>
     <?php endif; ?>
 
     <div style="margin-top: 30px;">
